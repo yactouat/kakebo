@@ -4,11 +4,7 @@ from typing import List, Optional, Dict, Any
 
 from db import get_connection
 from dtos.income_entry import IncomeEntryCreate, IncomeEntryUpdate
-
-
-class ValidationError(Exception):
-    """Raised when validation fails for income entry data."""
-    pass
+from exceptions import ValidationError
 
 
 def create_income_entry(entry: IncomeEntryCreate) -> Dict[str, Any]:

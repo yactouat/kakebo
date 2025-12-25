@@ -37,6 +37,16 @@ def init_db():
         """)
         print("Migration: Added currency column to income_entries table")
     
+    # Create fixed_expense_entries table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS fixed_expense_entries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            amount REAL NOT NULL,
+            item TEXT NOT NULL,
+            currency TEXT NOT NULL DEFAULT 'EUR'
+        )
+    """)
+    
     conn.commit()
     conn.close()
     print(f"Database initialized: {DB_PATH}")

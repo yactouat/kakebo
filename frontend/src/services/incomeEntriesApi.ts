@@ -1,12 +1,8 @@
 import type { IncomeEntry } from '../models/IncomeEntry';
 import type { IncomeEntryCreate, IncomeEntryUpdate } from '../dtos/incomeEntry';
+import type { APIResponse } from '../types/api';
 
 const API_BASE_URL = 'http://localhost:8000/income-entries';
-
-interface APIResponse<T> {
-  data: T | null;
-  msg: string;
-}
 
 export const incomeEntriesApi = {
   async getAll(month: string): Promise<IncomeEntry[]> {

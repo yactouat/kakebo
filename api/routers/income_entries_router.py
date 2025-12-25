@@ -2,15 +2,15 @@ from fastapi import APIRouter, HTTPException
 from pydantic import ValidationError as PydanticValidationError
 from typing import List
 
-from schemas import APIResponse
 from dtos.income_entry import IncomeEntry, IncomeEntryCreate, IncomeEntryUpdate
+from schemas import APIResponse
+from exceptions import ValidationError
 from services.income_entries_services import (
     create_income_entry,
     get_all_income_entries_by_month,
     get_income_entry_by_id,
     update_income_entry,
     delete_income_entry,
-    ValidationError,
 )
 
 

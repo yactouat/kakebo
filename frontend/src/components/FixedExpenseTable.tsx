@@ -14,68 +14,56 @@ import { useDisclosure } from '@mantine/hooks';
 import { useEffect, useState, useMemo } from 'react';
 import { useForm } from '@mantine/form';
 
-import type { IncomeEntryCreate, IncomeEntryUpdate } from '../dtos/incomeEntry';
-import type { IncomeEntry } from '../models/IncomeEntry';
-import { incomeEntriesApi } from '../services/incomeEntriesApi';
-import { useAppStore } from '../stores/useAppStore';
+import type { FixedExpenseEntryCreate, FixedExpenseEntryUpdate } from '../dtos/fixedExpenseEntry';
+import type { FixedExpenseEntry } from '../models/FixedExpenseEntry';
+import { fixedExpenseEntriesApi } from '../services/fixedExpenseEntriesApi';
 import { formatCurrency } from '../utils/currency';
 
-interface IncomeTableProps {
-  incomeData?: IncomeEntry[];
+interface FixedExpenseTableProps {
+  expenseData?: FixedExpenseEntry[];
   totalShown?: number;
 }
 
-const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalShown }: IncomeTableProps) => {
+const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initialTotalShown }: FixedExpenseTableProps) => {
   const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
   const [editOpened, { open: openEdit, close: closeEdit }] = useDisclosure(false);
-  const [editingEntry, setEditingEntry] = useState<IncomeEntry | null>(null);
-  const [incomeData, setIncomeData] = useState<IncomeEntry[]>(initialIncomeData || []);
+  const [editingEntry, setEditingEntry] = useState<FixedExpenseEntry | null>(null);
+  const [expenseData, setExpenseData] = useState<FixedExpenseEntry[]>(initialExpenseData || []);
   const [loading, setLoading] = useState(false);
-  const { selectedMonth } = useAppStore();
 
-  const createForm = useForm<IncomeEntryCreate>({
+  const createForm = useForm<FixedExpenseEntryCreate>({
     initialValues: {
       amount: 0,
-      date: new Date().toISOString().split('T')[0],
       item: '',
       currency: 'EUR',
     },
     validate: {
       amount: (value) => (value > 0 ? null : 'Amount must be greater than 0'),
-      date: (value) => (value ? null : 'Date is required'),
       item: (value) => (value.trim() ? null : 'Item is required'),
     },
   });
 
-  const editForm = useForm<IncomeEntryUpdate>({
+  const editForm = useForm<FixedExpenseEntryUpdate>({
     initialValues: {
       amount: 0,
-      date: '',
       item: '',
       currency: 'EUR',
     },
     validate: {
       amount: (value) => (value === undefined || value > 0 ? null : 'Amount must be greater than 0'),
-      date: (value) => (value === undefined || value ? null : 'Date is required'),
       item: (value) => (value === undefined || value.trim() ? null : 'Item is required'),
     },
   });
 
-  const fetchIncomeEntries = async () => {
-    if (selectedMonth === null) {
-      return;
-    }
+  const fetchFixedExpenseEntries = async () => {
     setLoading(true);
     try {
-      // Convert selectedMonth (1-12) to YYYY-MM format using current year
-      const currentYear = new Date().getFullYear();
-      const monthString = `${currentYear}-${String(selectedMonth).padStart(2, '0')}`;
-      const data = await incomeEntriesApi.getAll(monthString);
-      setIncomeData(data);
+      const data = await fixedExpenseEntriesApi.getAll();
+      setExpenseData(data);
     } catch (error) {
       notifications.show({
         title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to fetch income entries',
+        message: error instanceof Error ? error.message : 'Failed to fetch fixed expense entries',
         color: 'red',
       });
     } finally {
@@ -84,48 +72,47 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
   };
 
   useEffect(() => {
-    if (!initialIncomeData) {
-      fetchIncomeEntries();
+    if (!initialExpenseData) {
+      fetchFixedExpenseEntries();
     }
-  }, [initialIncomeData, selectedMonth]);
+  }, [initialExpenseData]);
 
-  const handleCreate = async (values: IncomeEntryCreate) => {
+  const handleCreate = async (values: FixedExpenseEntryCreate) => {
     try {
       // Ensure currency defaults to EUR
       const entryData = {
         ...values,
         currency: values.currency || 'EUR',
       };
-      await incomeEntriesApi.create(entryData);
+      await fixedExpenseEntriesApi.create(entryData);
       createForm.reset();
       closeCreate();
-      await fetchIncomeEntries();
+      await fetchFixedExpenseEntries();
       notifications.show({
         title: 'Success',
-        message: 'Income entry created successfully',
+        message: 'Fixed expense entry created successfully',
         color: 'green',
       });
     } catch (error) {
       notifications.show({
         title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to create income entry',
+        message: error instanceof Error ? error.message : 'Failed to create fixed expense entry',
         color: 'red',
       });
     }
   };
 
-  const handleEdit = (entry: IncomeEntry) => {
+  const handleEdit = (entry: FixedExpenseEntry) => {
     setEditingEntry(entry);
     editForm.setValues({
       amount: entry.amount,
-      date: entry.date,
       item: entry.item,
       currency: entry.currency || 'EUR',
     });
     openEdit();
   };
 
-  const handleUpdate = async (values: IncomeEntryUpdate) => {
+  const handleUpdate = async (values: FixedExpenseEntryUpdate) => {
     if (!editingEntry) return;
 
     try {
@@ -134,58 +121,58 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
         ...values,
         currency: values.currency || editingEntry.currency || 'EUR',
       };
-      await incomeEntriesApi.update(editingEntry.id, updateData);
+      await fixedExpenseEntriesApi.update(editingEntry.id, updateData);
       editForm.reset();
       closeEdit();
       setEditingEntry(null);
-      await fetchIncomeEntries();
+      await fetchFixedExpenseEntries();
       notifications.show({
         title: 'Success',
-        message: 'Income entry updated successfully',
+        message: 'Fixed expense entry updated successfully',
         color: 'green',
       });
     } catch (error) {
       notifications.show({
         title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to update income entry',
+        message: error instanceof Error ? error.message : 'Failed to update fixed expense entry',
         color: 'red',
       });
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this income entry?')) {
+    if (!confirm('Are you sure you want to delete this fixed expense entry?')) {
       return;
     }
 
     try {
-      await incomeEntriesApi.delete(id);
-      await fetchIncomeEntries();
+      await fixedExpenseEntriesApi.delete(id);
+      await fetchFixedExpenseEntries();
       notifications.show({
         title: 'Success',
-        message: 'Income entry deleted successfully',
+        message: 'Fixed expense entry deleted successfully',
         color: 'green',
       });
     } catch (error) {
       notifications.show({
         title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to delete income entry',
+        message: error instanceof Error ? error.message : 'Failed to delete fixed expense entry',
         color: 'red',
       });
     }
   };
 
-  const sortedIncomeData = useMemo(() => {
-    return [...incomeData].sort((a, b) => b.amount - a.amount);
-  }, [incomeData]);
+  const sortedExpenseData = useMemo(() => {
+    return [...expenseData].sort((a, b) => b.amount - a.amount);
+  }, [expenseData]);
 
-  const totalShown = initialTotalShown ?? incomeData.reduce((sum, entry) => sum + entry.amount, 0);
+  const totalShown = initialTotalShown ?? expenseData.reduce((sum, entry) => sum + entry.amount, 0);
 
   return (
     <>
       <Group justify="space-between" mb="md">
         <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>
-          Add Income Entry
+          Add Fixed Expense Entry
         </Button>
       </Group>
 
@@ -193,7 +180,6 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
         <Table.Thead>
           <Table.Tr>
             <Table.Th>Amount</Table.Th>
-            <Table.Th>Date</Table.Th>
             <Table.Th>Item</Table.Th>
             <Table.Th>Actions</Table.Th>
           </Table.Tr>
@@ -201,15 +187,14 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
         <Table.Tbody>
           {loading ? (
             <Table.Tr>
-              <Table.Td colSpan={4} style={{ textAlign: 'center' }}>
+              <Table.Td colSpan={3} style={{ textAlign: 'center' }}>
                 Loading...
               </Table.Td>
             </Table.Tr>
-          ) : sortedIncomeData.length > 0 ? (
-            sortedIncomeData.map((entry) => (
+          ) : sortedExpenseData.length > 0 ? (
+            sortedExpenseData.map((entry) => (
               <Table.Tr key={entry.id}>
                 <Table.Td>{formatCurrency(entry.amount, entry.currency)}</Table.Td>
-                <Table.Td>{entry.date}</Table.Td>
                 <Table.Td>{entry.item}</Table.Td>
                 <Table.Td>
                   <Group gap="xs">
@@ -235,15 +220,15 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
             ))
           ) : (
             <Table.Tr>
-              <Table.Td colSpan={4} style={{ textAlign: 'center' }}>
-                No income data available
+              <Table.Td colSpan={3} style={{ textAlign: 'center' }}>
+                No fixed expense data available
               </Table.Td>
             </Table.Tr>
           )}
         </Table.Tbody>
         <Table.Tfoot>
           <Table.Tr>
-            <Table.Td colSpan={2} style={{ fontWeight: 'bold', textAlign: 'right' }}>
+            <Table.Td style={{ fontWeight: 'bold', textAlign: 'right' }}>
               Total Shown:
             </Table.Td>
             <Table.Td style={{ fontWeight: 'bold' }}>
@@ -255,7 +240,7 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
       </Table>
 
       {/* Create Modal */}
-      <Modal opened={createOpened} onClose={closeCreate} title="Create Income Entry">
+      <Modal opened={createOpened} onClose={closeCreate} title="Create Fixed Expense Entry">
         <form onSubmit={createForm.onSubmit(handleCreate)}>
           <Stack>
             <NumberInput
@@ -266,12 +251,6 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
               decimalScale={2}
               required
               {...createForm.getInputProps('amount')}
-            />
-            <TextInput
-              label="Date"
-              type="date"
-              required
-              {...createForm.getInputProps('date')}
             />
             <TextInput
               label="Item"
@@ -290,7 +269,7 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
       </Modal>
 
       {/* Edit Modal */}
-      <Modal opened={editOpened} onClose={closeEdit} title="Edit Income Entry">
+      <Modal opened={editOpened} onClose={closeEdit} title="Edit Fixed Expense Entry">
         <form onSubmit={editForm.onSubmit(handleUpdate)}>
           <Stack>
             <NumberInput
@@ -301,12 +280,6 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
               decimalScale={2}
               required
               {...editForm.getInputProps('amount')}
-            />
-            <TextInput
-              label="Date"
-              type="date"
-              required
-              {...editForm.getInputProps('date')}
             />
             <TextInput
               label="Item"
@@ -327,5 +300,5 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
   );
 };
 
-export default IncomeTable;
+export default FixedExpenseTable;
 

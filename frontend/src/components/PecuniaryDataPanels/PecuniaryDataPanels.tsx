@@ -1,5 +1,6 @@
 import { Tabs } from '@mantine/core';
 import IncomeTable from '../IncomeTable';
+import FixedExpenseTable from '../FixedExpenseTable';
 import './PecuniaryDataPanels.css';
 
 const PecuniaryDataPanels = () => {
@@ -38,7 +39,7 @@ const PecuniaryDataPanels = () => {
       </Tabs.Panel>
 
       <Tabs.Panel pt="md" value="fixed-expenses">
-        <p>Fixed expenses content will go here</p>
+        <FixedExpenseTable />
       </Tabs.Panel>
 
       <Tabs.Panel pt="md" value="actual-expenses">
