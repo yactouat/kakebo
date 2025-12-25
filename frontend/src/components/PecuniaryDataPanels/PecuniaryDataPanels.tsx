@@ -1,7 +1,10 @@
 import { Tabs } from '@mantine/core';
-import IncomeTable from '../IncomeTable';
+
+import ActualExpenseTable from '../ActualExpenseTable';
 import FixedExpenseTable from '../FixedExpenseTable';
+import IncomeTable from '../IncomeTable';
 import { useAppStore } from '../../stores/useAppStore';
+
 import './PecuniaryDataPanels.css';
 
 const PecuniaryDataPanels = () => {
@@ -47,7 +50,7 @@ const PecuniaryDataPanels = () => {
       </Tabs.Panel>
 
       <Tabs.Panel pt="md" value="actual-expenses">
-        <p>Actual expenses content will go here</p>
+        <ActualExpenseTable />
       </Tabs.Panel>
     </Tabs>
   );

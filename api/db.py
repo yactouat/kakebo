@@ -77,6 +77,18 @@ def init_db():
         
         print("Migration: Added month and year columns to fixed_expense_entries table")
     
+    # Create actual_expense_entries table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS actual_expense_entries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            amount REAL NOT NULL,
+            date TEXT NOT NULL,
+            item TEXT NOT NULL,
+            category TEXT NOT NULL,
+            currency TEXT NOT NULL DEFAULT 'EUR'
+        )
+    """)
+    
     conn.commit()
     conn.close()
     print(f"Database initialized: {DB_PATH}")
