@@ -1,26 +1,15 @@
-import { IconEdit, IconTrash, IconPlus } from '@tabler/icons-react';
-import { notifications } from '@mantine/notifications';
-import { 
-  Table, 
-  Button, 
-  Group, 
-  ActionIcon,
-  Modal,
-  TextInput,
-  NumberInput,
-  Stack,
-  Select,
-} from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
-import { useEffect, useState, useMemo } from 'react';
-import { useForm } from '@mantine/form';
+import { Button, Group, NumberInput, Select, TextInput } from '@mantine/core';
+import { IconPlus } from '@tabler/icons-react';
 
-import type { FixedExpenseEntryCreate, FixedExpenseEntryUpdate } from '../dtos/fixedExpenseEntry';
+import { EntryModal, type FormField } from './shared/EntryModal';
+import { EntryTable, type TableColumn } from './shared/EntryTable';
 import type { FixedExpenseEntry } from '../models/FixedExpenseEntry';
+import type { FixedExpenseEntryCreate, FixedExpenseEntryUpdate } from '../dtos/fixedExpenseEntry';
 import { fixedExpenseEntriesApi } from '../services/fixedExpenseEntriesApi';
 import { formatCurrency } from '../utils/currency';
-import { monthToYYYYMM, MONTHS } from '../utils/months';
+import { MONTHS } from '../utils/months';
 import { useAppStore } from '../stores/useAppStore';
+import { useEntryTable } from '../hooks/useEntryTable';
 
 interface FixedExpenseTableProps {
   expenseData?: FixedExpenseEntry[];
@@ -28,11 +17,6 @@ interface FixedExpenseTableProps {
 }
 
 const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initialTotalShown }: FixedExpenseTableProps) => {
-  const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
-  const [editOpened, { open: openEdit, close: closeEdit }] = useDisclosure(false);
-  const [editingEntry, setEditingEntry] = useState<FixedExpenseEntry | null>(null);
-  const [expenseData, setExpenseData] = useState<FixedExpenseEntry[]>(initialExpenseData || []);
-  const [loading, setLoading] = useState(false);
   const { selectedMonth } = useAppStore();
 
   // Helper to get default month and year
@@ -43,30 +27,54 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
     return { month, year };
   };
 
-  const createForm = useForm<FixedExpenseEntryCreate>({
-    initialValues: {
-      amount: 0,
-      item: '',
-      currency: 'EUR',
-      ...getDefaultMonthYear(),
-    },
-    validate: {
+  const {
+    closeCreate,
+    closeEdit,
+    createForm,
+    createOpened,
+    data,
+    editForm,
+    editOpened,
+    handleCreate,
+    handleDelete,
+    handleEdit,
+    handleUpdate,
+    loading,
+    openCreate,
+    totalShown,
+  } = useEntryTable<FixedExpenseEntry, FixedExpenseEntryCreate, FixedExpenseEntryUpdate>({
+    api: fixedExpenseEntriesApi,
+    createValidation: {
       amount: (value) => (value > 0 ? null : 'Amount must be greater than 0'),
       item: (value) => (value.trim() ? null : 'Item is required'),
       month: (value) => (value === undefined || (value >= 1 && value <= 12) ? null : 'Month must be between 1 and 12'),
       year: (value) => (value === undefined || value > 0 ? null : 'Year must be positive'),
     },
-  });
-
-  const editForm = useForm<FixedExpenseEntryUpdate>({
-    initialValues: {
+    entityName: 'fixed expense entry',
+    getCreateInitialValues: () => ({
       amount: 0,
       item: '',
       currency: 'EUR',
-      month: undefined,
-      year: undefined,
-    },
-    validate: {
+      ...getDefaultMonthYear(),
+    }),
+    getEditInitialValues: (entry) => ({
+      amount: entry.amount,
+      item: entry.item,
+      currency: entry.currency || 'EUR',
+      month: entry.month,
+      year: entry.year,
+    }),
+    initialData: initialExpenseData,
+    initialTotalShown,
+    prepareCreateData: (values) => ({
+      ...values,
+      currency: values.currency || 'EUR',
+    }),
+    prepareUpdateData: (values, entry) => ({
+      ...values,
+      currency: values.currency || entry.currency || 'EUR',
+    }),
+    updateValidation: {
       amount: (value) => (value === undefined || value > 0 ? null : 'Amount must be greater than 0'),
       item: (value) => (value === undefined || value.trim() ? null : 'Item is required'),
       month: (value) => (value === undefined || (value >= 1 && value <= 12) ? null : 'Month must be between 1 and 12'),
@@ -74,125 +82,124 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
     },
   });
 
-  const fetchFixedExpenseEntries = async () => {
-    if (selectedMonth === null) {
-      return;
-    }
-    setLoading(true);
-    try {
-      const monthString = monthToYYYYMM(selectedMonth);
-      const data = await fixedExpenseEntriesApi.getAll(monthString);
-      setExpenseData(data);
-    } catch (error) {
-      notifications.show({
-        title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to fetch fixed expense entries',
-        color: 'red',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const columns: TableColumn<FixedExpenseEntry>[] = [
+    {
+      key: 'amount',
+      label: 'Amount',
+      render: (entry) => formatCurrency(entry.amount, entry.currency),
+    },
+    {
+      key: 'item',
+      label: 'Item',
+      render: (entry) => entry.item,
+    },
+  ];
 
-  useEffect(() => {
-    if (!initialExpenseData) {
-      fetchFixedExpenseEntries();
-    }
-  }, [initialExpenseData, selectedMonth]);
+  const createFields: FormField<FixedExpenseEntryCreate>[] = [
+    {
+      key: 'amount',
+      render: (form) => (
+        <NumberInput
+          label="Amount"
+          placeholder="Enter amount"
+          min={0}
+          step={0.01}
+          decimalScale={2}
+          required
+          {...form.getInputProps('amount')}
+        />
+      ),
+    },
+    {
+      key: 'item',
+      render: (form) => (
+        <TextInput
+          label="Item"
+          placeholder="Enter item description"
+          required
+          {...form.getInputProps('item')}
+        />
+      ),
+    },
+    {
+      key: 'month',
+      render: (form) => (
+        <Select
+          label="Month"
+          placeholder="Select month"
+          data={MONTHS}
+          value={form.values.month?.toString() || null}
+          onChange={(value) => form.setFieldValue('month', value ? parseInt(value, 10) : undefined)}
+          required
+        />
+      ),
+    },
+    {
+      key: 'year',
+      render: (form) => (
+        <NumberInput
+          label="Year"
+          placeholder="Enter year"
+          min={1}
+          required
+          {...form.getInputProps('year')}
+        />
+      ),
+    },
+  ];
 
-  const handleCreate = async (values: FixedExpenseEntryCreate) => {
-    try {
-      // Ensure currency defaults to EUR
-      const entryData = {
-        ...values,
-        currency: values.currency || 'EUR',
-      };
-      await fixedExpenseEntriesApi.create(entryData);
-      createForm.reset();
-      closeCreate();
-      await fetchFixedExpenseEntries();
-      notifications.show({
-        title: 'Success',
-        message: 'Fixed expense entry created successfully',
-        color: 'green',
-      });
-    } catch (error) {
-      notifications.show({
-        title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to create fixed expense entry',
-        color: 'red',
-      });
-    }
-  };
-
-  const handleEdit = (entry: FixedExpenseEntry) => {
-    setEditingEntry(entry);
-    const { month, year } = getDefaultMonthYear();
-    editForm.setValues({
-      amount: entry.amount,
-      item: entry.item,
-      currency: entry.currency || 'EUR',
-      month: entry.month ?? month,
-      year: entry.year ?? year,
-    });
-    openEdit();
-  };
-
-  const handleUpdate = async (values: FixedExpenseEntryUpdate) => {
-    if (!editingEntry) return;
-
-    try {
-      // Ensure currency defaults to EUR if not provided
-      const updateData = {
-        ...values,
-        currency: values.currency || editingEntry.currency || 'EUR',
-      };
-      await fixedExpenseEntriesApi.update(editingEntry.id, updateData);
-      editForm.reset();
-      closeEdit();
-      setEditingEntry(null);
-      await fetchFixedExpenseEntries();
-      notifications.show({
-        title: 'Success',
-        message: 'Fixed expense entry updated successfully',
-        color: 'green',
-      });
-    } catch (error) {
-      notifications.show({
-        title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to update fixed expense entry',
-        color: 'red',
-      });
-    }
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this fixed expense entry?')) {
-      return;
-    }
-
-    try {
-      await fixedExpenseEntriesApi.delete(id);
-      await fetchFixedExpenseEntries();
-      notifications.show({
-        title: 'Success',
-        message: 'Fixed expense entry deleted successfully',
-        color: 'green',
-      });
-    } catch (error) {
-      notifications.show({
-        title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to delete fixed expense entry',
-        color: 'red',
-      });
-    }
-  };
-
-  const sortedExpenseData = useMemo(() => {
-    return [...expenseData].sort((a, b) => b.amount - a.amount);
-  }, [expenseData]);
-
-  const totalShown = initialTotalShown ?? expenseData.reduce((sum, entry) => sum + entry.amount, 0);
+  const editFields: FormField<FixedExpenseEntryUpdate>[] = [
+    {
+      key: 'amount',
+      render: (form) => (
+        <NumberInput
+          label="Amount"
+          placeholder="Enter amount"
+          min={0}
+          step={0.01}
+          decimalScale={2}
+          required
+          {...form.getInputProps('amount')}
+        />
+      ),
+    },
+    {
+      key: 'item',
+      render: (form) => (
+        <TextInput
+          label="Item"
+          placeholder="Enter item description"
+          required
+          {...form.getInputProps('item')}
+        />
+      ),
+    },
+    {
+      key: 'month',
+      render: (form) => (
+        <Select
+          label="Month"
+          placeholder="Select month"
+          data={MONTHS}
+          value={form.values.month?.toString() || null}
+          onChange={(value) => form.setFieldValue('month', value ? parseInt(value, 10) : undefined)}
+          required
+        />
+      ),
+    },
+    {
+      key: 'year',
+      render: (form) => (
+        <NumberInput
+          label="Year"
+          placeholder="Enter year"
+          min={1}
+          required
+          {...form.getInputProps('year')}
+        />
+      ),
+    },
+  ];
 
   return (
     <>
@@ -210,159 +217,37 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
         </Button>
       </Group>
 
-      <Table striped highlightOnHover withTableBorder withColumnBorders>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>Amount</Table.Th>
-            <Table.Th>Item</Table.Th>
-            <Table.Th>Actions</Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {loading ? (
-            <Table.Tr>
-              <Table.Td colSpan={3} style={{ textAlign: 'center' }}>
-                Loading...
-              </Table.Td>
-            </Table.Tr>
-          ) : sortedExpenseData.length > 0 ? (
-            sortedExpenseData.map((entry) => (
-              <Table.Tr key={entry.id}>
-                <Table.Td>{formatCurrency(entry.amount, entry.currency)}</Table.Td>
-                <Table.Td>{entry.item}</Table.Td>
-                <Table.Td>
-                  <Group gap="xs">
-                    <ActionIcon
-                      variant="subtle"
-                      color="blue"
-                      onClick={() => handleEdit(entry)}
-                      aria-label="Edit entry"
-                    >
-                      <IconEdit size={16} />
-                    </ActionIcon>
-                    <ActionIcon
-                      variant="subtle"
-                      color="red"
-                      onClick={() => handleDelete(entry.id)}
-                      aria-label="Delete entry"
-                    >
-                      <IconTrash size={16} />
-                    </ActionIcon>
-                  </Group>
-                </Table.Td>
-              </Table.Tr>
-            ))
-          ) : (
-            <Table.Tr>
-              <Table.Td colSpan={3} style={{ textAlign: 'center' }}>
-                No fixed expense data available
-              </Table.Td>
-            </Table.Tr>
-          )}
-        </Table.Tbody>
-        <Table.Tfoot>
-          <Table.Tr>
-            <Table.Td style={{ fontWeight: 'bold', textAlign: 'right' }}>
-              Total Shown:
-            </Table.Td>
-            <Table.Td style={{ fontWeight: 'bold' }}>
-              {formatCurrency(totalShown, 'EUR')}
-            </Table.Td>
-            <Table.Td></Table.Td>
-          </Table.Tr>
-        </Table.Tfoot>
-      </Table>
+      <EntryTable
+        columns={columns}
+        data={data}
+        emptyMessage="No fixed expense data available"
+        loading={loading}
+        onDelete={handleDelete}
+        onEdit={handleEdit}
+        totalShown={totalShown}
+      />
 
-      {/* Create Modal */}
-      <Modal opened={createOpened} onClose={closeCreate} title="Create Fixed Expense Entry">
-        <form onSubmit={createForm.onSubmit(handleCreate)}>
-          <Stack>
-            <NumberInput
-              label="Amount"
-              placeholder="Enter amount"
-              min={0}
-              step={0.01}
-              decimalScale={2}
-              required
-              {...createForm.getInputProps('amount')}
-            />
-            <TextInput
-              label="Item"
-              placeholder="Enter item description"
-              required
-              {...createForm.getInputProps('item')}
-            />
-            <Select
-              label="Month"
-              placeholder="Select month"
-              data={MONTHS}
-              value={createForm.values.month?.toString() || null}
-              onChange={(value) => createForm.setFieldValue('month', value ? parseInt(value, 10) : undefined)}
-              required
-            />
-            <NumberInput
-              label="Year"
-              placeholder="Enter year"
-              min={1}
-              required
-              {...createForm.getInputProps('year')}
-            />
-            <Group justify="flex-end" mt="md">
-              <Button variant="subtle" onClick={closeCreate}>
-                Cancel
-              </Button>
-              <Button type="submit">Create</Button>
-            </Group>
-          </Stack>
-        </form>
-      </Modal>
+      <EntryModal
+        fields={createFields}
+        form={createForm}
+        onClose={closeCreate}
+        onSubmit={handleCreate}
+        opened={createOpened}
+        submitLabel="Create"
+        title="Create Fixed Expense Entry"
+      />
 
-      {/* Edit Modal */}
-      <Modal opened={editOpened} onClose={closeEdit} title="Edit Fixed Expense Entry">
-        <form onSubmit={editForm.onSubmit(handleUpdate)}>
-          <Stack>
-            <NumberInput
-              label="Amount"
-              placeholder="Enter amount"
-              min={0}
-              step={0.01}
-              decimalScale={2}
-              required
-              {...editForm.getInputProps('amount')}
-            />
-            <TextInput
-              label="Item"
-              placeholder="Enter item description"
-              required
-              {...editForm.getInputProps('item')}
-            />
-            <Select
-              label="Month"
-              placeholder="Select month"
-              data={MONTHS}
-              value={editForm.values.month?.toString() || null}
-              onChange={(value) => editForm.setFieldValue('month', value ? parseInt(value, 10) : undefined)}
-              required
-            />
-            <NumberInput
-              label="Year"
-              placeholder="Enter year"
-              min={1}
-              required
-              {...editForm.getInputProps('year')}
-            />
-            <Group justify="flex-end" mt="md">
-              <Button variant="subtle" onClick={closeEdit}>
-                Cancel
-              </Button>
-              <Button type="submit">Update</Button>
-            </Group>
-          </Stack>
-        </form>
-      </Modal>
+      <EntryModal
+        fields={editFields}
+        form={editForm}
+        onClose={closeEdit}
+        onSubmit={handleUpdate}
+        opened={editOpened}
+        submitLabel="Update"
+        title="Edit Fixed Expense Entry"
+      />
     </>
   );
 };
 
 export default FixedExpenseTable;
-
