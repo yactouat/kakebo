@@ -18,6 +18,8 @@ import type { FixedExpenseEntryCreate, FixedExpenseEntryUpdate } from '../dtos/f
 import type { FixedExpenseEntry } from '../models/FixedExpenseEntry';
 import { fixedExpenseEntriesApi } from '../services/fixedExpenseEntriesApi';
 import { formatCurrency } from '../utils/currency';
+import { monthToYYYYMM } from '../utils/months';
+import { useAppStore } from '../stores/useAppStore';
 
 interface FixedExpenseTableProps {
   expenseData?: FixedExpenseEntry[];
@@ -30,6 +32,7 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
   const [editingEntry, setEditingEntry] = useState<FixedExpenseEntry | null>(null);
   const [expenseData, setExpenseData] = useState<FixedExpenseEntry[]>(initialExpenseData || []);
   const [loading, setLoading] = useState(false);
+  const { selectedMonth } = useAppStore();
 
   const createForm = useForm<FixedExpenseEntryCreate>({
     initialValues: {
@@ -56,9 +59,13 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
   });
 
   const fetchFixedExpenseEntries = async () => {
+    if (selectedMonth === null) {
+      return;
+    }
     setLoading(true);
     try {
-      const data = await fixedExpenseEntriesApi.getAll();
+      const monthString = monthToYYYYMM(selectedMonth);
+      const data = await fixedExpenseEntriesApi.getAll(monthString);
       setExpenseData(data);
     } catch (error) {
       notifications.show({
@@ -75,7 +82,7 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
     if (!initialExpenseData) {
       fetchFixedExpenseEntries();
     }
-  }, [initialExpenseData]);
+  }, [initialExpenseData, selectedMonth]);
 
   const handleCreate = async (values: FixedExpenseEntryCreate) => {
     try {

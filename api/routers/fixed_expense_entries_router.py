@@ -7,7 +7,7 @@ from exceptions import ValidationError
 from schemas import APIResponse
 from services.fixed_expense_entries_services import (
     create_fixed_expense_entry,
-    get_all_fixed_expense_entries,
+    get_all_fixed_expense_entries_by_month,
     get_fixed_expense_entry_by_id,
     update_fixed_expense_entry,
     delete_fixed_expense_entry,
@@ -38,10 +38,14 @@ async def create_entry(entry: FixedExpenseEntryCreate):
 
 
 @router.get("", response_model=APIResponse[List[FixedExpenseEntry]])
-async def get_all_entries():
-    """Get all fixed expense entries."""
+async def get_all_entries_by_month(month: str):
+    """Get all fixed expense entries for a specific month.
+    
+    Args:
+        month: Month in YYYY-MM format (e.g., "2024-01" for January 2024)
+    """
     try:
-        entries = get_all_fixed_expense_entries()
+        entries = get_all_fixed_expense_entries_by_month(month)
         return APIResponse(
             data=[FixedExpenseEntry(**entry) for entry in entries],
             msg="Fixed expense entries retrieved successfully"

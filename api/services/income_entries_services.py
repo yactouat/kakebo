@@ -1,10 +1,10 @@
 import sqlite3
-import re
 from typing import List, Optional, Dict, Any
 
 from db import get_connection
 from dtos.income_entry import IncomeEntryCreate, IncomeEntryUpdate
 from exceptions import ValidationError
+from validators.month_validator import validate_month_format
 
 
 def create_income_entry(entry: IncomeEntryCreate) -> Dict[str, Any]:
@@ -44,18 +44,7 @@ def get_all_income_entries_by_month(month: str) -> List[Dict[str, Any]]:
         ValidationError: If the month format is invalid
     """
     # Validate month format: YYYY-MM
-    month_pattern = re.compile(r'^\d{4}-\d{2}$')
-    if not month_pattern.match(month):
-        raise ValidationError(f"Invalid month format. Expected YYYY-MM (e.g., '2026-01'), got '{month}'")
-    
-    # Validate that month is between 01-12
-    try:
-        year, month_num = month.split('-')
-        month_int = int(month_num)
-        if month_int < 1 or month_int > 12:
-            raise ValidationError(f"Invalid month number. Month must be between 01-12, got '{month_num}'")
-    except ValueError:
-        raise ValidationError(f"Invalid month format. Expected YYYY-MM (e.g., '2026-01'), got '{month}'")
+    validate_month_format(month)
     
     conn = get_connection()
     conn.row_factory = sqlite3.Row

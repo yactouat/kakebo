@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from db import init_db
-from routers import fixed_expense_entries_router, income_entries_router
+from routers import available_cash_router, fixed_expense_entries_router, income_entries_router
 from schemas import APIResponse
 
 
@@ -56,5 +56,6 @@ async def root():
 
 
 # Include routers
+app.include_router(available_cash_router.router)
 app.include_router(fixed_expense_entries_router.router)
 app.include_router(income_entries_router.router)

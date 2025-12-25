@@ -14,6 +14,7 @@ import './App.css';
 import { Container, MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 
+import AvailableCash from './components/AvailableCash';
 import MonthSelector from './components/MonthSelector';
 import PecuniaryDataPanels from './components/PecuniaryDataPanels/PecuniaryDataPanels';
 
@@ -26,6 +27,7 @@ const App = () => {
         <Container size="xl" style={{ width: '100%' }}>
           <MonthSelector />
           <PecuniaryDataPanels />
+          <AvailableCash />
         </Container>
       </div>
     </MantineProvider>

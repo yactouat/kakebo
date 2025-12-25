@@ -4,6 +4,7 @@ from typing import List, Optional, Dict, Any
 from db import get_connection
 from dtos.fixed_expense_entry import FixedExpenseEntryCreate, FixedExpenseEntryUpdate
 from exceptions import ValidationError
+from validators.month_validator import validate_month_format
 
 
 def create_fixed_expense_entry(entry: FixedExpenseEntryCreate) -> Dict[str, Any]:
@@ -30,15 +31,25 @@ def create_fixed_expense_entry(entry: FixedExpenseEntryCreate) -> Dict[str, Any]
     return {"id": entry_id, "amount": entry.amount, "item": entry.item, "currency": currency}
 
 
-def get_all_fixed_expense_entries() -> List[Dict[str, Any]]:
-    """Get all fixed expense entries.
+def get_all_fixed_expense_entries_by_month(month: str) -> List[Dict[str, Any]]:
+    """Get all fixed expense entries for a specific month.
+    
+    Args:
+        month: Month in YYYY-MM format (e.g., "2026-01" for January 2026)
     
     Returns:
-        List of all fixed expense entries
+        List of all fixed expense entries (fixed expenses apply to all months, so all entries are returned)
+    
+    Raises:
+        ValidationError: If the month format is invalid
     """
+    # Validate month format: YYYY-MM
+    validate_month_format(month)
+    
     conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
+    # Fixed expenses apply to all months, so we return all entries regardless of the month parameter
     cursor.execute(
         "SELECT id, amount, item, currency FROM fixed_expense_entries ORDER BY id DESC"
     )

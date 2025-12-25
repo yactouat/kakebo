@@ -5,8 +5,8 @@ import type { APIResponse } from '../types/api';
 const API_BASE_URL = 'http://localhost:8000/fixed-expense-entries';
 
 export const fixedExpenseEntriesApi = {
-  async getAll(): Promise<FixedExpenseEntry[]> {
-    const response = await fetch(API_BASE_URL);
+  async getAll(month: string): Promise<FixedExpenseEntry[]> {
+    const response = await fetch(`${API_BASE_URL}?month=${encodeURIComponent(month)}`);
     if (!response.ok) {
       throw new Error(`Failed to fetch fixed expense entries: ${response.statusText}`);
     }

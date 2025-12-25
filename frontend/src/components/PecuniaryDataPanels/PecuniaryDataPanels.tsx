@@ -1,12 +1,16 @@
 import { Tabs } from '@mantine/core';
 import IncomeTable from '../IncomeTable';
 import FixedExpenseTable from '../FixedExpenseTable';
+import { useAppStore } from '../../stores/useAppStore';
 import './PecuniaryDataPanels.css';
 
 const PecuniaryDataPanels = () => {
+  const { activeTab, setActiveTab } = useAppStore();
+
   return (
     <Tabs 
-      defaultValue="income" 
+      value={activeTab}
+      onChange={(value) => value && setActiveTab(value)}
       mt="xl"
       className="pecuniary-tabs"
     >

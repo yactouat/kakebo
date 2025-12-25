@@ -14,11 +14,12 @@ import { useDisclosure } from '@mantine/hooks';
 import { useEffect, useState, useMemo } from 'react';
 import { useForm } from '@mantine/form';
 
+import { formatCurrency } from '../utils/currency';
 import type { IncomeEntryCreate, IncomeEntryUpdate } from '../dtos/incomeEntry';
 import type { IncomeEntry } from '../models/IncomeEntry';
 import { incomeEntriesApi } from '../services/incomeEntriesApi';
+import { monthToYYYYMM } from '../utils/months';
 import { useAppStore } from '../stores/useAppStore';
-import { formatCurrency } from '../utils/currency';
 
 interface IncomeTableProps {
   incomeData?: IncomeEntry[];
@@ -67,9 +68,7 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
     }
     setLoading(true);
     try {
-      // Convert selectedMonth (1-12) to YYYY-MM format using current year
-      const currentYear = new Date().getFullYear();
-      const monthString = `${currentYear}-${String(selectedMonth).padStart(2, '0')}`;
+      const monthString = monthToYYYYMM(selectedMonth);
       const data = await incomeEntriesApi.getAll(monthString);
       setIncomeData(data);
     } catch (error) {
