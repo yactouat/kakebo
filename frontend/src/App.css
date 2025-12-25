@@ -1,0 +1,17 @@
+.app-container {
+  align-items: center;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  margin: 0;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.app-container h1 {
+  margin: 0;
+  margin-bottom: 2rem;
+  padding-top: 2rem;
+}
+
