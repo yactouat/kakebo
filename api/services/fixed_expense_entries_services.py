@@ -1,5 +1,6 @@
 import sqlite3
 from typing import List, Optional, Dict, Any
+from datetime import datetime
 
 from db import get_connection
 from dtos.fixed_expense_entry import FixedExpenseEntryCreate, FixedExpenseEntryUpdate
@@ -19,16 +20,21 @@ def create_fixed_expense_entry(entry: FixedExpenseEntryCreate) -> Dict[str, Any]
     # Currency defaults to EUR in the DTO, but ensure it's set
     currency = getattr(entry, 'currency', 'EUR') or 'EUR'
     
+    # default to current month/year if not provided
+    current_date = datetime.now()
+    month = entry.month if entry.month is not None else current_date.month
+    year = entry.year if entry.year is not None else current_date.year
+    
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO fixed_expense_entries (amount, item, currency) VALUES (?, ?, ?)",
-        (entry.amount, entry.item, currency)
+        "INSERT INTO fixed_expense_entries (amount, item, currency, month, year) VALUES (?, ?, ?, ?, ?)",
+        (entry.amount, entry.item, currency, month, year)
     )
     entry_id = cursor.lastrowid
     conn.commit()
     conn.close()
-    return {"id": entry_id, "amount": entry.amount, "item": entry.item, "currency": currency}
+    return {"id": entry_id, "amount": entry.amount, "item": entry.item, "currency": currency, "month": month, "year": year}
 
 
 def get_all_fixed_expense_entries_by_month(month: str) -> List[Dict[str, Any]]:
@@ -38,7 +44,7 @@ def get_all_fixed_expense_entries_by_month(month: str) -> List[Dict[str, Any]]:
         month: Month in YYYY-MM format (e.g., "2026-01" for January 2026)
     
     Returns:
-        List of all fixed expense entries (fixed expenses apply to all months, so all entries are returned)
+        List of fixed expense entries for the specified month
     
     Raises:
         ValidationError: If the month format is invalid
@@ -46,12 +52,18 @@ def get_all_fixed_expense_entries_by_month(month: str) -> List[Dict[str, Any]]:
     # Validate month format: YYYY-MM
     validate_month_format(month)
     
+    # Parse month string to get year and month
+    year_str, month_str = month.split('-')
+    year = int(year_str)
+    month_num = int(month_str)
+    
     conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    # Fixed expenses apply to all months, so we return all entries regardless of the month parameter
+    # Filter by month and year
     cursor.execute(
-        "SELECT id, amount, item, currency FROM fixed_expense_entries ORDER BY id DESC"
+        "SELECT id, amount, item, currency, month, year FROM fixed_expense_entries WHERE month = ? AND year = ? ORDER BY id DESC",
+        (month_num, year)
     )
     entries = [dict(row) for row in cursor.fetchall()]
     # Ensure currency defaults to EUR for existing entries without currency
@@ -67,7 +79,7 @@ def get_fixed_expense_entry_by_id(entry_id: int) -> Optional[Dict[str, Any]]:
     conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT id, amount, item, currency FROM fixed_expense_entries WHERE id = ?", (entry_id,))
+    cursor.execute("SELECT id, amount, item, currency, month, year FROM fixed_expense_entries WHERE id = ?", (entry_id,))
     row = cursor.fetchone()
     conn.close()
     if row:
@@ -75,6 +87,11 @@ def get_fixed_expense_entry_by_id(entry_id: int) -> Optional[Dict[str, Any]]:
         # Ensure currency defaults to EUR for existing entries without currency
         if 'currency' not in entry or entry['currency'] is None:
             entry['currency'] = 'EUR'
+        # Ensure month and year are set (fallback for edge cases)
+        if 'month' not in entry or entry['month'] is None:
+            entry['month'] = datetime.now().month
+        if 'year' not in entry or entry['year'] is None:
+            entry['year'] = datetime.now().year
         return entry
     return None
 
@@ -98,17 +115,21 @@ def update_fixed_expense_entry(entry_id: int, entry_update: FixedExpenseEntryUpd
     existing_currency = existing.get("currency", "EUR")
     currency = entry_update.currency if entry_update.currency is not None else existing_currency
     
+    # Handle month and year - use provided values or keep existing
+    month = entry_update.month if entry_update.month is not None else existing.get("month", datetime.now().month)
+    year = entry_update.year if entry_update.year is not None else existing.get("year", datetime.now().year)
+    
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "UPDATE fixed_expense_entries SET amount = ?, item = ?, currency = ? WHERE id = ?",
-        (amount, item, currency, entry_id)
+        "UPDATE fixed_expense_entries SET amount = ?, item = ?, currency = ?, month = ?, year = ? WHERE id = ?",
+        (amount, item, currency, month, year, entry_id)
     )
     conn.commit()
     updated = cursor.rowcount > 0
     conn.close()
     if updated:
-        return {"id": entry_id, "amount": amount, "item": item, "currency": currency}
+        return {"id": entry_id, "amount": amount, "item": item, "currency": currency, "month": month, "year": year}
     return None
 
 

@@ -31,7 +31,7 @@ def calculate_available_cash(month: str) -> Dict[str, Any]:
     income_entries = get_all_income_entries_by_month(month)
     total_income = sum(entry["amount"] for entry in income_entries)
 
-    # Get total fixed expenses (they apply to all months, but we pass month for consistency)
+    # get total fixed expenses for the specified month
     fixed_expense_entries = get_all_fixed_expense_entries_by_month(month)
     total_expenses = sum(entry["amount"] for entry in fixed_expense_entries)
 

@@ -9,6 +9,7 @@ import {
   TextInput,
   NumberInput,
   Stack,
+  Select,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useEffect, useState, useMemo } from 'react';
@@ -18,7 +19,7 @@ import type { FixedExpenseEntryCreate, FixedExpenseEntryUpdate } from '../dtos/f
 import type { FixedExpenseEntry } from '../models/FixedExpenseEntry';
 import { fixedExpenseEntriesApi } from '../services/fixedExpenseEntriesApi';
 import { formatCurrency } from '../utils/currency';
-import { monthToYYYYMM } from '../utils/months';
+import { monthToYYYYMM, MONTHS } from '../utils/months';
 import { useAppStore } from '../stores/useAppStore';
 
 interface FixedExpenseTableProps {
@@ -34,15 +35,26 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
   const [loading, setLoading] = useState(false);
   const { selectedMonth } = useAppStore();
 
+  // Helper to get default month and year
+  const getDefaultMonthYear = () => {
+    const now = new Date();
+    const month = selectedMonth ?? now.getMonth() + 1;
+    const year = now.getFullYear();
+    return { month, year };
+  };
+
   const createForm = useForm<FixedExpenseEntryCreate>({
     initialValues: {
       amount: 0,
       item: '',
       currency: 'EUR',
+      ...getDefaultMonthYear(),
     },
     validate: {
       amount: (value) => (value > 0 ? null : 'Amount must be greater than 0'),
       item: (value) => (value.trim() ? null : 'Item is required'),
+      month: (value) => (value === undefined || (value >= 1 && value <= 12) ? null : 'Month must be between 1 and 12'),
+      year: (value) => (value === undefined || value > 0 ? null : 'Year must be positive'),
     },
   });
 
@@ -51,10 +63,14 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
       amount: 0,
       item: '',
       currency: 'EUR',
+      month: undefined,
+      year: undefined,
     },
     validate: {
       amount: (value) => (value === undefined || value > 0 ? null : 'Amount must be greater than 0'),
       item: (value) => (value === undefined || value.trim() ? null : 'Item is required'),
+      month: (value) => (value === undefined || (value >= 1 && value <= 12) ? null : 'Month must be between 1 and 12'),
+      year: (value) => (value === undefined || value > 0 ? null : 'Year must be positive'),
     },
   });
 
@@ -111,10 +127,13 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
 
   const handleEdit = (entry: FixedExpenseEntry) => {
     setEditingEntry(entry);
+    const { month, year } = getDefaultMonthYear();
     editForm.setValues({
       amount: entry.amount,
       item: entry.item,
       currency: entry.currency || 'EUR',
+      month: entry.month ?? month,
+      year: entry.year ?? year,
     });
     openEdit();
   };
@@ -178,7 +197,15 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
   return (
     <>
       <Group justify="space-between" mb="md">
-        <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>
+        <Button 
+          leftSection={<IconPlus size={16} />} 
+          onClick={() => {
+            const { month, year } = getDefaultMonthYear();
+            createForm.setFieldValue('month', month);
+            createForm.setFieldValue('year', year);
+            openCreate();
+          }}
+        >
           Add Fixed Expense Entry
         </Button>
       </Group>
@@ -265,6 +292,21 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
               required
               {...createForm.getInputProps('item')}
             />
+            <Select
+              label="Month"
+              placeholder="Select month"
+              data={MONTHS}
+              value={createForm.values.month?.toString() || null}
+              onChange={(value) => createForm.setFieldValue('month', value ? parseInt(value, 10) : undefined)}
+              required
+            />
+            <NumberInput
+              label="Year"
+              placeholder="Enter year"
+              min={1}
+              required
+              {...createForm.getInputProps('year')}
+            />
             <Group justify="flex-end" mt="md">
               <Button variant="subtle" onClick={closeCreate}>
                 Cancel
@@ -293,6 +335,21 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
               placeholder="Enter item description"
               required
               {...editForm.getInputProps('item')}
+            />
+            <Select
+              label="Month"
+              placeholder="Select month"
+              data={MONTHS}
+              value={editForm.values.month?.toString() || null}
+              onChange={(value) => editForm.setFieldValue('month', value ? parseInt(value, 10) : undefined)}
+              required
+            />
+            <NumberInput
+              label="Year"
+              placeholder="Enter year"
+              min={1}
+              required
+              {...editForm.getInputProps('year')}
             />
             <Group justify="flex-end" mt="md">
               <Button variant="subtle" onClick={closeEdit}>

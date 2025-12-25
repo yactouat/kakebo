@@ -18,6 +18,15 @@ export const MONTH_NAMES = [
 ];
 
 /**
+ * Month options array for Select components.
+ * Maps month names to { value, label } format where value is the month number (1-12) as a string.
+ */
+export const MONTHS = MONTH_NAMES.map((name, index) => ({
+  value: String(index + 1),
+  label: name,
+}));
+
+/**
  * Get month name by month number (1-12).
  * @param monthNumber - Month number (1-12)
  * @returns Month name string

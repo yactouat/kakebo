@@ -1,11 +1,6 @@
 import { Select } from '@mantine/core';
 import { useAppStore } from '../stores/useAppStore';
-import { MONTH_NAMES } from '../utils/months';
-
-const MONTHS = MONTH_NAMES.map((name, index) => ({
-  value: String(index + 1),
-  label: name,
-}));
+import { MONTHS } from '../utils/months';
 
 const MonthSelector = () => {
   const { selectedMonth, setSelectedMonth } = useAppStore();

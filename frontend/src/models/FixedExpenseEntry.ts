@@ -3,5 +3,7 @@ export interface FixedExpenseEntry {
   amount: number;
   item: string;
   currency?: string;
+  month: number;
+  year: number;
 }
 

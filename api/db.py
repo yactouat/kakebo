@@ -43,9 +43,39 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             amount REAL NOT NULL,
             item TEXT NOT NULL,
-            currency TEXT NOT NULL DEFAULT 'EUR'
+            currency TEXT NOT NULL DEFAULT 'EUR',
+            month INTEGER NOT NULL,
+            year INTEGER NOT NULL
         )
     """)
+    
+    # Migration: Add month and year columns if they don't exist (for existing databases)
+    cursor.execute("""
+        SELECT COUNT(*) FROM pragma_table_info('fixed_expense_entries') WHERE name='month'
+    """)
+    has_month = cursor.fetchone()[0] > 0
+    
+    if not has_month:
+        # Get current month and year
+        from datetime import datetime
+        current_date = datetime.now()
+        current_month = current_date.month
+        current_year = current_date.year
+        
+        # Add columns (SQLite will set DEFAULT for existing rows)
+        cursor.execute("""
+            ALTER TABLE fixed_expense_entries ADD COLUMN month INTEGER
+        """)
+        cursor.execute("""
+            ALTER TABLE fixed_expense_entries ADD COLUMN year INTEGER
+        """)
+        
+        # Update existing rows with current month/year
+        cursor.execute("""
+            UPDATE fixed_expense_entries SET month = ?, year = ? WHERE month IS NULL OR year IS NULL
+        """, (current_month, current_year))
+        
+        print("Migration: Added month and year columns to fixed_expense_entries table")
     
     conn.commit()
     conn.close()
