@@ -1,14 +1,8 @@
 import { Tabs } from '@mantine/core';
 import { useMemo } from 'react';
 import IncomeTable from '../IncomeTable';
+import type { IncomeEntry } from '../../models/IncomeEntry';
 import './PecuniaryDataPanels.css';
-
-interface IncomeEntry {
-  amount: number;
-  date: string;
-  item: string;
-  totalShown: number;
-}
 
 const PecuniaryDataPanels = () => {
   // TODO sample data - replace with actual data from store/API later

@@ -1,12 +1,13 @@
+*.db
 *.egg-info/
 *.py[cod]
 *.so
+*$py.class
 .Python
 ENV/
 __pycache__/
+.venv
 build/
 dist/
 env/
 venv/
-.venv
-*$py.class

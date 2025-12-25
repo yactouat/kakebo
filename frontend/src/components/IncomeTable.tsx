@@ -1,10 +1,5 @@
 import { Table } from '@mantine/core';
-
-interface IncomeEntry {
-  amount: number;
-  date: string;
-  item: string;
-}
+import type { IncomeEntry } from '../models/IncomeEntry';
 
 interface IncomeTableProps {
   incomeData: IncomeEntry[];
