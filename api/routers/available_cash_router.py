@@ -12,7 +12,7 @@ router = APIRouter(prefix="/available-cash", tags=["available-cash"])
 async def get_available_cash_by_month(month: str):
     """Get available cash for a specific month.
     
-    Available cash = Total income for the month - Total fixed expenses
+    Available cash = Total income for the month - Total fixed expenses - Total actual expenses
     
     Args:
         month: Month in YYYY-MM format (e.g., "2024-01" for January 2024)

@@ -1,9 +1,10 @@
-import { Paper, Text, Loader, Center } from '@mantine/core';
+import { Center, Divider, Group, Loader, Paper, Stack, Text } from '@mantine/core';
 import { useEffect, useState, useRef } from 'react';
-import { useAppStore } from '../stores/useAppStore';
+
 import { availableCashApi, type AvailableCashData } from '../services/availableCashApi';
 import { formatCurrency } from '../utils/currency';
 import { getMonthName, monthToYYYYMM } from '../utils/months';
+import { useAppStore } from '../stores/useAppStore';
 
 const AvailableCash = () => {
   const { activeTab, dataChangeCounter, selectedMonth } = useAppStore();
@@ -86,9 +87,33 @@ const AvailableCash = () => {
           {error}
         </Text>
       ) : availableCashData ? (
-        <Text size="xl" fw={700} c={availableCashData.available_cash >= 0 ? 'green' : 'red'}>
-          {formatCurrency(availableCashData.available_cash, 'EUR')}
-        </Text>
+        <Stack gap="xs">
+          <Group justify="space-between">
+            <Text size="sm" c="dimmed">Total Income</Text>
+            <Text size="sm" fw={500} c="green">
+              {formatCurrency(availableCashData.total_income, 'EUR')}
+            </Text>
+          </Group>
+          <Group justify="space-between">
+            <Text size="sm" c="dimmed">Fixed Expenses</Text>
+            <Text size="sm" fw={500} c="red">
+              -{formatCurrency(availableCashData.total_fixed_expenses, 'EUR')}
+            </Text>
+          </Group>
+          <Group justify="space-between">
+            <Text size="sm" c="dimmed">Actual Expenses</Text>
+            <Text size="sm" fw={500} c="orange">
+              -{formatCurrency(availableCashData.total_actual_expenses, 'EUR')}
+            </Text>
+          </Group>
+          <Divider my="xs" />
+          <Group justify="space-between">
+            <Text size="md" fw={600}>Available Cash</Text>
+            <Text size="xl" fw={700} c={availableCashData.available_cash >= 0 ? 'green' : 'red'}>
+              {formatCurrency(availableCashData.available_cash, 'EUR')}
+            </Text>
+          </Group>
+        </Stack>
       ) : null}
     </Paper>
   );

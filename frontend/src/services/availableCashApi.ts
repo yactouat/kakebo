@@ -4,9 +4,11 @@ const API_BASE_URL = 'http://localhost:8000/available-cash/by-month';
 
 export interface AvailableCashData {
   available_cash: number;
-  total_income: number;
-  total_expenses: number;
   month: string;
+  total_actual_expenses: number;
+  total_expenses: number;
+  total_fixed_expenses: number;
+  total_income: number;
 }
 
 export const availableCashApi = {
