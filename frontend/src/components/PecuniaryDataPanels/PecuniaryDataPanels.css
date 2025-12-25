@@ -1,0 +1,14 @@
+/* Override Mantine Tabs active border color */
+/* Target the active tab's bottom border to match the tab's text color using data attribute */
+.pecuniary-tabs [role="tab"][data-active][data-tab-color="green"] {
+  border-bottom-color: green !important;
+}
+
+.pecuniary-tabs [role="tab"][data-active][data-tab-color="red"] {
+  border-bottom-color: red !important;
+}
+
+.pecuniary-tabs [role="tab"][data-active][data-tab-color="orange"] {
+  border-bottom-color: orange !important;
+}
+

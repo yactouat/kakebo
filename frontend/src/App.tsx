@@ -16,7 +16,7 @@ import { MantineProvider } from '@mantine/core';
 import { useEffect, useRef, useState } from 'react';
 
 import MonthsCarousel from './components/MonthsCarousel';
-import PecuniaryDataPanels from './components/PecuniaryDataPanels';
+import PecuniaryDataPanels from './components/PecuniaryDataPanels/PecuniaryDataPanels';
 
 const App = () => {
   const carouselRef = useRef<HTMLDivElement>(null);

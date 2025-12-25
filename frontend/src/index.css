@@ -1,0 +1,6 @@
+/* Global override for Mantine Tabs border color */
+[role="tablist"]::before {
+  border-color: #333 !important;
+  border-bottom-color: #333 !important;
+}
+
