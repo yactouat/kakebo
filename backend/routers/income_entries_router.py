@@ -6,7 +6,7 @@ from schemas import APIResponse
 from dtos.income_entry import IncomeEntry, IncomeEntryCreate, IncomeEntryUpdate
 from services.income_entries_services import (
     create_income_entry,
-    get_all_income_entries,
+    get_all_income_entries_by_month,
     get_income_entry_by_id,
     update_income_entry,
     delete_income_entry,
@@ -38,14 +38,20 @@ async def create_entry(entry: IncomeEntryCreate):
 
 
 @router.get("", response_model=APIResponse[List[IncomeEntry]])
-async def get_all_entries():
-    """Get all income entries."""
+async def get_all_entries_by_month(month: str):
+    """Get all income entries for a specific month.
+    
+    Args:
+        month: Month in YYYY-MM format (e.g., "2024-01" for January 2024)
+    """
     try:
-        entries = get_all_income_entries()
+        entries = get_all_income_entries_by_month(month)
         return APIResponse(
             data=[IncomeEntry(**entry) for entry in entries],
             msg="Income entries retrieved successfully"
         )
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve income entries: {str(e)}")
 

@@ -20,9 +20,22 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             amount REAL NOT NULL,
             date TEXT NOT NULL,
-            item TEXT NOT NULL
+            item TEXT NOT NULL,
+            currency TEXT NOT NULL DEFAULT 'EUR'
         )
     """)
+    
+    # Migration: Add currency column if it doesn't exist (for existing databases)
+    cursor.execute("""
+        SELECT COUNT(*) FROM pragma_table_info('income_entries') WHERE name='currency'
+    """)
+    has_currency = cursor.fetchone()[0] > 0
+    
+    if not has_currency:
+        cursor.execute("""
+            ALTER TABLE income_entries ADD COLUMN currency TEXT NOT NULL DEFAULT 'EUR'
+        """)
+        print("Migration: Added currency column to income_entries table")
     
     conn.commit()
     conn.close()
