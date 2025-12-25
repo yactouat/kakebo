@@ -6,7 +6,7 @@ import { formatCurrency } from '../utils/currency';
 import { getMonthName, monthToYYYYMM } from '../utils/months';
 
 const AvailableCash = () => {
-  const { selectedMonth, activeTab } = useAppStore();
+  const { activeTab, dataChangeCounter, selectedMonth } = useAppStore();
   const [availableCashData, setAvailableCashData] = useState<AvailableCashData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +34,7 @@ const AvailableCash = () => {
     };
 
     fetchAvailableCash();
-  }, [selectedMonth]);
+  }, [dataChangeCounter, selectedMonth]);
 
   // Auto-scroll to component if not visible in viewport
   useEffect(() => {

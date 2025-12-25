@@ -43,7 +43,7 @@ export function useEntryTable<TEntry extends { id: number; amount: number }, TCr
   const [editingEntry, setEditingEntry] = useState<TEntry | null>(null);
   const [data, setData] = useState<TEntry[]>(initialData || []);
   const [loading, setLoading] = useState(false);
-  const { selectedMonth } = useAppStore();
+  const { notifyDataChange, selectedMonth } = useAppStore();
 
   const createForm = useForm<TCreate>({
     initialValues: getCreateInitialValues(),
@@ -88,6 +88,7 @@ export function useEntryTable<TEntry extends { id: number; amount: number }, TCr
       createForm.reset();
       closeCreate();
       await fetchEntries();
+      notifyDataChange();
       notifications.show({
         title: 'Success',
         message: `${entityName.charAt(0).toUpperCase() + entityName.slice(1)} created successfully`,
@@ -118,6 +119,7 @@ export function useEntryTable<TEntry extends { id: number; amount: number }, TCr
       closeEdit();
       setEditingEntry(null);
       await fetchEntries();
+      notifyDataChange();
       notifications.show({
         title: 'Success',
         message: `${entityName.charAt(0).toUpperCase() + entityName.slice(1)} updated successfully`,
@@ -140,6 +142,7 @@ export function useEntryTable<TEntry extends { id: number; amount: number }, TCr
     try {
       await api.delete(id);
       await fetchEntries();
+      notifyDataChange();
       notifications.show({
         title: 'Success',
         message: `${entityName.charAt(0).toUpperCase() + entityName.slice(1)} deleted successfully`,
