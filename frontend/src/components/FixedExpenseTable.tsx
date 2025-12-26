@@ -12,6 +12,7 @@ import { formatCurrency } from '../utils/currency';
 import { MONTHS } from '../utils/months';
 import { useAppStore } from '../stores/useAppStore';
 import { useEntryTable } from '../hooks/useEntryTable';
+import { useTableSort } from '../hooks/useTableSort';
 
 interface FixedExpenseTableProps {
   expenseData?: FixedExpenseEntry[];
@@ -133,16 +134,32 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
     }
   };
 
+  // Sort functionality
+  const getValue = (entry: FixedExpenseEntry, column: string): any => {
+    switch (column) {
+      case 'amount':
+        return entry.amount;
+      case 'item':
+        return entry.item;
+      default:
+        return null;
+    }
+  };
+
+  const { sortedData, sortState, handleSort } = useTableSort('fixedExpenseTable', data, getValue);
+
   const columns: TableColumn<FixedExpenseEntry>[] = [
     {
       key: 'amount',
       label: 'Amount',
       render: (entry) => formatCurrency(entry.amount, entry.currency),
+      sortable: true,
     },
     {
       key: 'item',
       label: 'Item',
       render: (entry) => entry.item,
+      sortable: true,
     },
   ];
 
@@ -320,13 +337,15 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
 
       <EntryTable
         columns={columns}
-        data={data}
+        data={sortedData}
         emptyMessage="No fixed expense data available"
         loading={loading}
         onDelete={handleDelete}
         onEdit={handleEdit}
         onSelectionChange={setSelectedIds}
         selectedIds={selectedIds}
+        sortState={sortState}
+        onSort={handleSort}
         totalShown={totalShown}
       />
 

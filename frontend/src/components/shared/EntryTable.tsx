@@ -1,13 +1,15 @@
-import { IconEdit, IconTrash } from '@tabler/icons-react';
+import { IconEdit, IconTrash, IconChevronUp, IconChevronDown, IconArrowsUpDown } from '@tabler/icons-react';
 import { Table, Group, ActionIcon, Checkbox } from '@mantine/core';
 import { useState } from 'react';
 
 import { formatCurrency } from '../../utils/currency';
+import type { SortState } from '../../hooks/useTableSort';
 
 export interface TableColumn<T> {
   key: string;
   label: string;
   render: (entry: T) => React.ReactNode;
+  sortable?: boolean;
 }
 
 interface EntryTableProps<T extends { id: number; amount: number; currency?: string }> {
@@ -19,6 +21,8 @@ interface EntryTableProps<T extends { id: number; amount: number; currency?: str
   onEdit: (entry: T) => void;
   onSelectionChange?: (selectedIds: number[]) => void;
   selectedIds?: number[];
+  sortState?: SortState;
+  onSort?: (column: string) => void;
   totalShown: number;
 }
 
@@ -31,6 +35,8 @@ export function EntryTable<T extends { id: number; amount: number; currency?: st
   onEdit,
   onSelectionChange,
   selectedIds = [],
+  sortState,
+  onSort,
   totalShown,
 }: EntryTableProps<T>) {
   const colSpan = columns.length + 2; // +1 for checkbox, +1 for Actions column
@@ -53,6 +59,19 @@ export function EntryTable<T extends { id: number; amount: number; currency?: st
     }
   };
 
+  const getSortIcon = (columnKey: string) => {
+    if (!sortState || sortState.column !== columnKey) {
+      return <IconArrowsUpDown size={14} style={{ opacity: 0.3 }} />;
+    }
+    if (sortState.direction === 'asc') {
+      return <IconChevronUp size={14} />;
+    }
+    if (sortState.direction === 'desc') {
+      return <IconChevronDown size={14} />;
+    }
+    return <IconArrowsUpDown size={14} style={{ opacity: 0.3 }} />;
+  };
+
   return (
     <Table striped highlightOnHover withTableBorder withColumnBorders>
       <Table.Thead>
@@ -68,7 +87,23 @@ export function EntryTable<T extends { id: number; amount: number; currency?: st
             </Table.Th>
           )}
           {columns.map((column) => (
-            <Table.Th key={column.key}>{column.label}</Table.Th>
+            <Table.Th
+              key={column.key}
+              style={{
+                cursor: column.sortable !== false && onSort ? 'pointer' : 'default',
+                userSelect: 'none',
+              }}
+              onClick={() => {
+                if (column.sortable !== false && onSort) {
+                  onSort(column.key);
+                }
+              }}
+            >
+              <Group gap="xs" style={{ display: 'inline-flex' }}>
+                <span>{column.label}</span>
+                {column.sortable !== false && onSort && getSortIcon(column.key)}
+              </Group>
+            </Table.Th>
           ))}
           <Table.Th>Actions</Table.Th>
         </Table.Tr>

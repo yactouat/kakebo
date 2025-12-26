@@ -10,6 +10,7 @@ import type { IncomeEntryCreate, IncomeEntryUpdate } from '../dtos/incomeEntry';
 import type { IncomeEntry } from '../models/IncomeEntry';
 import { useAppStore } from '../stores/useAppStore';
 import { useEntryTable } from '../hooks/useEntryTable';
+import { useTableSort } from '../hooks/useTableSort';
 
 interface IncomeTableProps {
   incomeData?: IncomeEntry[];
@@ -79,21 +80,40 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
     },
   });
 
+  // Sort functionality
+  const getValue = (entry: IncomeEntry, column: string): any => {
+    switch (column) {
+      case 'amount':
+        return entry.amount;
+      case 'date':
+        return entry.date;
+      case 'item':
+        return entry.item;
+      default:
+        return null;
+    }
+  };
+
+  const { sortedData, sortState, handleSort } = useTableSort('incomeTable', data, getValue);
+
   const columns: TableColumn<IncomeEntry>[] = [
     {
       key: 'amount',
       label: 'Amount',
       render: (entry) => formatCurrency(entry.amount, entry.currency),
+      sortable: true,
     },
     {
       key: 'date',
       label: 'Date',
       render: (entry) => entry.date,
+      sortable: true,
     },
     {
       key: 'item',
       label: 'Item',
       render: (entry) => entry.item,
+      sortable: true,
     },
   ];
 
@@ -230,13 +250,15 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
 
       <EntryTable
         columns={columns}
-        data={data}
+        data={sortedData}
         emptyMessage="No income data available"
         loading={loading}
         onDelete={handleDelete}
         onEdit={handleEdit}
         onSelectionChange={setSelectedIds}
         selectedIds={selectedIds}
+        sortState={sortState}
+        onSort={handleSort}
         totalShown={totalShown}
       />
 

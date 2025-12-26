@@ -286,15 +286,11 @@ export function useEntryTable<TEntry extends { id: number; amount: number }, TCr
     }
   };
 
-  const sortedData = useMemo(() => {
-    return [...data].sort((a, b) => b.amount - a.amount);
-  }, [data]);
-
   const totalShown = initialTotalShown ?? data.reduce((sum, entry) => sum + entry.amount, 0);
 
   return {
     // State
-    data: sortedData,
+    data,
     loading,
     selectedIds,
     setSelectedIds,

@@ -1,5 +1,5 @@
 import { Button, Group, NumberInput, Select, TextInput, Table, ActionIcon, Checkbox } from '@mantine/core';
-import { IconPlus, IconEdit, IconTrash, IconArrowsJoin } from '@tabler/icons-react';
+import { IconPlus, IconEdit, IconTrash, IconArrowsJoin, IconChevronUp, IconChevronDown, IconArrowsUpDown } from '@tabler/icons-react';
 
 import { actualExpenseEntriesApi } from '../services/actualExpenseEntriesApi';
 import type { ActualExpenseEntryCreate, ActualExpenseEntryUpdate } from '../dtos/actualExpenseEntry';
@@ -9,6 +9,7 @@ import { formatCurrency } from '../utils/currency';
 import { getDefaultDate } from '../utils/months';
 import { useAppStore } from '../stores/useAppStore';
 import { useEntryTable } from '../hooks/useEntryTable';
+import { useTableSort } from '../hooks/useTableSort';
 
 // Category color mapping - using Mantine color names
 const categoryColors: Record<ExpenseCategory, { bg: string; border: string; text: string }> = {
@@ -104,12 +105,43 @@ const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initi
     return categoryColors[category] || { bg: '#F8F9FA', border: '#868E96', text: '#495057' };
   };
 
+  // Sort functionality
+  const getValue = (entry: ActualExpenseEntry, column: string): any => {
+    switch (column) {
+      case 'amount':
+        return entry.amount;
+      case 'date':
+        return entry.date;
+      case 'item':
+        return entry.item;
+      case 'category':
+        return entry.category;
+      default:
+        return null;
+    }
+  };
+
+  const { sortedData, sortState, handleSort } = useTableSort('actualExpenseTable', data, getValue);
+
+  const getSortIcon = (columnKey: string) => {
+    if (!sortState || sortState.column !== columnKey) {
+      return <IconArrowsUpDown size={14} style={{ opacity: 0.3 }} />;
+    }
+    if (sortState.direction === 'asc') {
+      return <IconChevronUp size={14} />;
+    }
+    if (sortState.direction === 'desc') {
+      return <IconChevronDown size={14} />;
+    }
+    return <IconArrowsUpDown size={14} style={{ opacity: 0.3 }} />;
+  };
+
   const colSpan = 6; // checkbox, amount, date, item, category, actions
-  const allSelected = data.length > 0 && selectedIds.length === data.length;
-  const someSelected = selectedIds.length > 0 && selectedIds.length < data.length;
+  const allSelected = sortedData.length > 0 && selectedIds.length === sortedData.length;
+  const someSelected = selectedIds.length > 0 && selectedIds.length < sortedData.length;
 
   const handleSelectAll = (checked: boolean) => {
-    setSelectedIds(checked ? data.map((entry) => entry.id) : []);
+    setSelectedIds(checked ? sortedData.map((entry) => entry.id) : []);
   };
 
   const handleSelectRow = (entryId: number, checked: boolean) => {
@@ -185,10 +217,42 @@ const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initi
                 aria-label="Select all"
               />
             </Table.Th>
-            <Table.Th>Amount</Table.Th>
-            <Table.Th>Date</Table.Th>
-            <Table.Th>Item</Table.Th>
-            <Table.Th>Category</Table.Th>
+            <Table.Th
+              style={{ cursor: 'pointer', userSelect: 'none' }}
+              onClick={() => handleSort('amount')}
+            >
+              <Group gap="xs" style={{ display: 'inline-flex' }}>
+                <span>Amount</span>
+                {getSortIcon('amount')}
+              </Group>
+            </Table.Th>
+            <Table.Th
+              style={{ cursor: 'pointer', userSelect: 'none' }}
+              onClick={() => handleSort('date')}
+            >
+              <Group gap="xs" style={{ display: 'inline-flex' }}>
+                <span>Date</span>
+                {getSortIcon('date')}
+              </Group>
+            </Table.Th>
+            <Table.Th
+              style={{ cursor: 'pointer', userSelect: 'none' }}
+              onClick={() => handleSort('item')}
+            >
+              <Group gap="xs" style={{ display: 'inline-flex' }}>
+                <span>Item</span>
+                {getSortIcon('item')}
+              </Group>
+            </Table.Th>
+            <Table.Th
+              style={{ cursor: 'pointer', userSelect: 'none' }}
+              onClick={() => handleSort('category')}
+            >
+              <Group gap="xs" style={{ display: 'inline-flex' }}>
+                <span>Category</span>
+                {getSortIcon('category')}
+              </Group>
+            </Table.Th>
             <Table.Th>Actions</Table.Th>
           </Table.Tr>
         </Table.Thead>
@@ -199,8 +263,8 @@ const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initi
                 Loading...
               </Table.Td>
             </Table.Tr>
-          ) : data.length > 0 ? (
-            data.map((entry) => {
+          ) : sortedData.length > 0 ? (
+            sortedData.map((entry) => {
               const categoryColor = getCategoryColor(entry.category);
               return (
                 <Table.Tr
