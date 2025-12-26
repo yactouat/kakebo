@@ -1,5 +1,7 @@
 import { Button, Group, NumberInput, Select, TextInput } from '@mantine/core';
-import { IconPlus } from '@tabler/icons-react';
+import { IconCopy, IconPlus } from '@tabler/icons-react';
+import { notifications } from '@mantine/notifications';
+import { useState } from 'react';
 
 import { EntryModal, type FormField } from './shared/EntryModal';
 import { EntryTable, type TableColumn } from './shared/EntryTable';
@@ -17,7 +19,8 @@ interface FixedExpenseTableProps {
 }
 
 const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initialTotalShown }: FixedExpenseTableProps) => {
-  const { selectedMonth, selectedYear } = useAppStore();
+  const { notifyDataChange, selectedMonth, selectedYear } = useAppStore();
+  const [copyLoading, setCopyLoading] = useState(false);
 
   // Helper to get default month and year
   const getDefaultMonthYear = () => {
@@ -25,6 +28,14 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
     const month = selectedMonth ?? now.getMonth() + 1;
     const year = selectedYear ?? now.getFullYear();
     return { month, year };
+  };
+
+  // Check if selected month and year are current month and year
+  const isCurrentMonth = () => {
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+    return selectedMonth === currentMonth && selectedYear === currentYear;
   };
 
   const {
@@ -35,6 +46,7 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
     data,
     editForm,
     editOpened,
+    fetchEntries,
     handleCreate,
     handleDelete,
     handleEdit,
@@ -81,6 +93,37 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
       year: (value) => (value === undefined || value > 0 ? null : 'Year must be positive'),
     },
   });
+
+  const handleCopyToNextMonth = async () => {
+    if (!isCurrentMonth()) {
+      notifications.show({
+        title: 'Error',
+        message: 'Can only copy fixed expenses when viewing the current month',
+        color: 'red',
+      });
+      return;
+    }
+
+    setCopyLoading(true);
+    try {
+      const result = await fixedExpenseEntriesApi.copyToNextMonth();
+      await fetchEntries();
+      notifyDataChange();
+      notifications.show({
+        title: 'Success',
+        message: `Successfully copied ${result.copied_count} fixed expense entr${result.copied_count === 1 ? 'y' : 'ies'} to next month`,
+        color: 'green',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: error instanceof Error ? error.message : 'Failed to copy fixed expense entries',
+        color: 'red',
+      });
+    } finally {
+      setCopyLoading(false);
+    }
+  };
 
   const columns: TableColumn<FixedExpenseEntry>[] = [
     {
@@ -204,17 +247,29 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
   return (
     <>
       <Group justify="space-between" mb="md">
-        <Button 
-          leftSection={<IconPlus size={16} />} 
-          onClick={() => {
-            const { month, year } = getDefaultMonthYear();
-            createForm.setFieldValue('month', month);
-            createForm.setFieldValue('year', year);
-            openCreate();
-          }}
-        >
-          Add Fixed Expense Entry
-        </Button>
+        <Group>
+          <Button 
+            leftSection={<IconPlus size={16} />} 
+            onClick={() => {
+              const { month, year } = getDefaultMonthYear();
+              createForm.setFieldValue('month', month);
+              createForm.setFieldValue('year', year);
+              openCreate();
+            }}
+          >
+            Add Fixed Expense Entry
+          </Button>
+          {isCurrentMonth() && (
+            <Button
+              leftSection={<IconCopy size={16} />}
+              loading={copyLoading}
+              onClick={handleCopyToNextMonth}
+              variant="light"
+            >
+              Copy to Next Month
+            </Button>
+          )}
+        </Group>
       </Group>
 
       <EntryTable

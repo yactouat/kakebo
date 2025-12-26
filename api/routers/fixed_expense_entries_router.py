@@ -7,6 +7,7 @@ from exceptions import ValidationError
 from schemas import APIResponse
 from services.balance_entry_services import update_balance_entry_for_month
 from services.fixed_expense_entries_services import (
+    copy_fixed_expense_entries_to_next_month,
     create_fixed_expense_entry,
     delete_fixed_expense_entry,
     get_all_fixed_expense_entries_by_month,
@@ -43,6 +44,25 @@ async def create_entry(entry: FixedExpenseEntryCreate):
         raise HTTPException(status_code=422, detail=f"Validation error: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to create fixed expense entry: {str(e)}")
+
+
+@router.post("/copy-to-next-month", response_model=APIResponse[dict])
+async def copy_entries_to_next_month():
+    """Copy all fixed expense entries from current month to next month.
+    
+    This endpoint can only be called when viewing the current month.
+    It copies all fixed expense entries from the current month to the next month.
+    """
+    try:
+        copied_count = copy_fixed_expense_entries_to_next_month()
+        return APIResponse(
+            data={"copied_count": copied_count},
+            msg=f"Successfully copied {copied_count} fixed expense entr{'y' if copied_count == 1 else 'ies'} to next month"
+        )
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to copy fixed expense entries: {str(e)}")
 
 
 @router.get("", response_model=APIResponse[List[FixedExpenseEntry]])

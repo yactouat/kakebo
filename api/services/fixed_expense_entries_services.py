@@ -8,6 +8,52 @@ from exceptions import ValidationError
 from validators.month_validator import validate_month_format
 
 
+def copy_fixed_expense_entries_to_next_month() -> int:
+    """Copy all fixed expense entries from current month to next month.
+    
+    Returns:
+        Number of entries copied
+    
+    Raises:
+        ValidationError: If the current month has no entries or if validation fails
+    """
+    current_date = datetime.now()
+    current_month = current_date.month
+    current_year = current_date.year
+    
+    # Calculate next month and year (handle year rollover)
+    if current_month == 12:
+        next_month = 1
+        next_year = current_year + 1
+    else:
+        next_month = current_month + 1
+        next_year = current_year
+    
+    # Get all entries from current month
+    current_month_str = f"{current_year}-{current_month:02d}"
+    entries = get_all_fixed_expense_entries_by_month(current_month_str)
+    
+    if not entries:
+        raise ValidationError(f"No fixed expense entries found for current month ({current_month_str})")
+    
+    # Copy each entry to next month
+    conn = get_connection()
+    cursor = conn.cursor()
+    copied_count = 0
+    
+    for entry in entries:
+        cursor.execute(
+            "INSERT INTO fixed_expense_entries (amount, item, currency, month, year) VALUES (?, ?, ?, ?, ?)",
+            (entry['amount'], entry['item'], entry.get('currency', 'EUR'), next_month, next_year)
+        )
+        copied_count += 1
+    
+    conn.commit()
+    conn.close()
+    
+    return copied_count
+
+
 def create_fixed_expense_entry(entry: FixedExpenseEntryCreate) -> Dict[str, Any]:
     """Create a new fixed expense entry and return it with its ID.
     
@@ -35,6 +81,17 @@ def create_fixed_expense_entry(entry: FixedExpenseEntryCreate) -> Dict[str, Any]
     conn.commit()
     conn.close()
     return {"id": entry_id, "amount": entry.amount, "item": entry.item, "currency": currency, "month": month, "year": year}
+
+
+def delete_fixed_expense_entry(entry_id: int) -> bool:
+    """Delete a fixed expense entry by ID. Returns True if deleted, False if not found."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM fixed_expense_entries WHERE id = ?", (entry_id,))
+    deleted = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return deleted
 
 
 def get_all_fixed_expense_entries_by_month(month: str) -> List[Dict[str, Any]]:
@@ -131,15 +188,4 @@ def update_fixed_expense_entry(entry_id: int, entry_update: FixedExpenseEntryUpd
     if updated:
         return {"id": entry_id, "amount": amount, "item": item, "currency": currency, "month": month, "year": year}
     return None
-
-
-def delete_fixed_expense_entry(entry_id: int) -> bool:
-    """Delete a fixed expense entry by ID. Returns True if deleted, False if not found."""
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM fixed_expense_entries WHERE id = ?", (entry_id,))
-    deleted = cursor.rowcount > 0
-    conn.commit()
-    conn.close()
-    return deleted
 
