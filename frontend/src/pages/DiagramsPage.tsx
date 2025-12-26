@@ -6,7 +6,6 @@ import MonthSelector from '../components/MonthSelector';
 const DiagramsPage = () => {
   return (
     <Container size="xl" style={{ width: '100%' }}>
-      <Title order={2} mb="xl">Diagrams</Title>
       <MonthSelector />
       
       <Paper p="xl" radius="md" withBorder>
