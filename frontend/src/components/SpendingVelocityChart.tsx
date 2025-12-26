@@ -10,6 +10,7 @@ interface DailySpendingData {
   day: number;
   daily: number;
   cumulative: number;
+  dayOfWeek: string;
 }
 
 const SpendingVelocityChart = () => {
@@ -32,6 +33,15 @@ const SpendingVelocityChart = () => {
         // Get the number of days in the selected month
         const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
 
+        // Determine the maximum day to show (current day if viewing current month, otherwise all days)
+        const currentDate = new Date();
+        const currentMonth = currentDate.getMonth() + 1;
+        const currentYear = currentDate.getFullYear();
+        const currentDay = currentDate.getDate();
+        
+        const isCurrentMonth = selectedMonth === currentMonth && selectedYear === currentYear;
+        const maxDay = isCurrentMonth ? currentDay : daysInMonth;
+
         // Initialize daily spending map
         const dailySpendingMap = new Map<number, number>();
         entries.forEach((entry) => {
@@ -43,17 +53,24 @@ const SpendingVelocityChart = () => {
           }
         });
 
-        // Build data array for all days of the month
+        // Build data array only up to the current day (or all days for past months)
         const data: DailySpendingData[] = [];
         let cumulativeTotal = 0;
 
-        for (let day = 1; day <= daysInMonth; day++) {
+        for (let day = 1; day <= maxDay; day++) {
           const dailyAmount = dailySpendingMap.get(day) || 0;
           cumulativeTotal += dailyAmount;
+          
+          // Calculate day of week
+          const date = new Date(selectedYear, selectedMonth - 1, day);
+          const dayOfWeekNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+          const dayOfWeek = dayOfWeekNames[date.getDay()];
+          
           data.push({
             day,
             daily: dailyAmount,
             cumulative: cumulativeTotal,
+            dayOfWeek,
           });
         }
 
@@ -85,6 +102,30 @@ const SpendingVelocityChart = () => {
     );
   }
 
+  // Custom tooltip that includes day of week
+  const CustomTooltip = (props: any) => {
+    const day = typeof props.label === 'number' ? props.label : parseInt(String(props.label), 10);
+    const dataPoint = chartData.find(d => d.day === day);
+    let enhancedLabel = props.label;
+    
+    if (dataPoint && dataPoint.dayOfWeek) {
+      enhancedLabel = `Day ${day} (${dataPoint.dayOfWeek})`;
+    } else if (selectedMonth && selectedYear && !isNaN(day)) {
+      // Fallback: calculate day of week if dataPoint not found
+      const date = new Date(selectedYear, selectedMonth - 1, day);
+      const dayOfWeekNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const dayOfWeek = dayOfWeekNames[date.getDay()];
+      enhancedLabel = `Day ${day} (${dayOfWeek})`;
+    }
+    
+    return (
+      <CurrencyTooltip
+        {...props}
+        label={enhancedLabel}
+      />
+    );
+  };
+
   return (
     <>
       <AreaChart
@@ -98,7 +139,25 @@ const SpendingVelocityChart = () => {
         tickLine="x"
         withLegend
         tooltipProps={{
-          content: CurrencyTooltip,
+          content: CustomTooltip,
+        }}
+        xAxisProps={{
+          tickFormatter: (value) => {
+            // Handle both number and string values
+            const day = typeof value === 'number' ? value : parseInt(String(value), 10);
+            const dataPoint = chartData.find(d => d.day === day);
+            if (dataPoint && dataPoint.dayOfWeek) {
+              return `${day} (${dataPoint.dayOfWeek})`;
+            }
+            // Fallback: calculate day of week if dataPoint not found
+            if (selectedMonth && selectedYear) {
+              const date = new Date(selectedYear, selectedMonth - 1, day);
+              const dayOfWeekNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+              const dayOfWeek = dayOfWeekNames[date.getDay()];
+              return `${day} (${dayOfWeek})`;
+            }
+            return String(day);
+          },
         }}
         xAxisLabel="Day of Month"
         yAxisLabel="Amount (EUR)"
