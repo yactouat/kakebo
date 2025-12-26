@@ -1,13 +1,14 @@
 import { Button, Group, NumberInput, Select, TextInput, Table, ActionIcon } from '@mantine/core';
 import { IconPlus, IconEdit, IconTrash } from '@tabler/icons-react';
 
-import { EntryModal } from './shared/EntryModal';
-import { formatCurrency } from '../utils/currency';
 import { actualExpenseEntriesApi } from '../services/actualExpenseEntriesApi';
 import type { ActualExpenseEntryCreate, ActualExpenseEntryUpdate } from '../dtos/actualExpenseEntry';
 import type { ActualExpenseEntry, ExpenseCategory } from '../models/ActualExpenseEntry';
-import { useEntryTable } from '../hooks/useEntryTable';
+import { EntryModal } from './shared/EntryModal';
+import { formatCurrency } from '../utils/currency';
+import { getDefaultDate } from '../utils/months';
 import { useAppStore } from '../stores/useAppStore';
+import { useEntryTable } from '../hooks/useEntryTable';
 
 // Category color mapping - using Mantine color names
 const categoryColors: Record<ExpenseCategory, { bg: string; border: string; text: string }> = {
@@ -35,16 +36,6 @@ interface ActualExpenseTableProps {
 const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initialTotalShown }: ActualExpenseTableProps) => {
   const { selectedMonth, selectedYear } = useAppStore();
 
-  // TODO change this so that default date is today if selected month is current month
-  // Helper to get default date based on selected month/year
-  const getDefaultDate = () => {
-    const now = new Date();
-    const month = selectedMonth ?? now.getMonth() + 1;
-    const year = selectedYear ?? now.getFullYear();
-    // Use the first day of the selected month
-    return `${year}-${String(month).padStart(2, '0')}-01`;
-  };
-
   const {
     closeCreate,
     closeEdit,
@@ -71,7 +62,7 @@ const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initi
     entityName: 'actual expense entry',
     getCreateInitialValues: () => ({
       amount: 0,
-      date: getDefaultDate(),
+      date: getDefaultDate(selectedMonth, selectedYear),
       item: '',
       category: 'essential' as ExpenseCategory,
       currency: 'EUR',
@@ -113,7 +104,7 @@ const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initi
         <Button 
           leftSection={<IconPlus size={16} />} 
           onClick={() => {
-            createForm.setFieldValue('date', getDefaultDate());
+            createForm.setFieldValue('date', getDefaultDate(selectedMonth, selectedYear));
             openCreate();
           }}
         >

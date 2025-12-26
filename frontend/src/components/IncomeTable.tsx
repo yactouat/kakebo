@@ -4,11 +4,12 @@ import { IconPlus } from '@tabler/icons-react';
 import { EntryModal, type FormField } from './shared/EntryModal';
 import { EntryTable, type TableColumn } from './shared/EntryTable';
 import { formatCurrency } from '../utils/currency';
+import { getDefaultDate } from '../utils/months';
 import { incomeEntriesApi } from '../services/incomeEntriesApi';
 import type { IncomeEntryCreate, IncomeEntryUpdate } from '../dtos/incomeEntry';
 import type { IncomeEntry } from '../models/IncomeEntry';
-import { useEntryTable } from '../hooks/useEntryTable';
 import { useAppStore } from '../stores/useAppStore';
+import { useEntryTable } from '../hooks/useEntryTable';
 
 interface IncomeTableProps {
   incomeData?: IncomeEntry[];
@@ -17,16 +18,6 @@ interface IncomeTableProps {
 
 const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalShown }: IncomeTableProps) => {
   const { selectedMonth, selectedYear } = useAppStore();
-
-  // TODO lift this logic to a helper function
-  // Helper to get default date based on selected month/year
-  const getDefaultDate = () => {
-    const now = new Date();
-    const month = selectedMonth ?? now.getMonth() + 1;
-    const year = selectedYear ?? now.getFullYear();
-    // Use the first day of the selected month
-    return `${year}-${String(month).padStart(2, '0')}-01`;
-  };
 
   const {
     closeCreate,
@@ -53,7 +44,7 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
     entityName: 'income entry',
     getCreateInitialValues: () => ({
       amount: 0,
-      date: getDefaultDate(),
+      date: getDefaultDate(selectedMonth, selectedYear),
       item: '',
       currency: 'EUR',
     }),
@@ -182,7 +173,7 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
         <Button 
           leftSection={<IconPlus size={16} />} 
           onClick={() => {
-            createForm.setFieldValue('date', getDefaultDate());
+            createForm.setFieldValue('date', getDefaultDate(selectedMonth, selectedYear));
             openCreate();
           }}
         >

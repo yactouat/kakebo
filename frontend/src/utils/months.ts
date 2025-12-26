@@ -96,3 +96,28 @@ export const monthToYYYYMM = (monthNumber: number, year?: number): string => {
   return `${currentYear}-${String(monthNumber).padStart(2, '0')}`;
 };
 
+/**
+ * Get default date for entry forms based on selected month/year.
+ * Returns today's date if the selected month is the current month, otherwise returns the first day of the selected month.
+ * @param selectedMonth - Selected month number (1-12) or null/undefined
+ * @param selectedYear - Selected year or null/undefined
+ * @returns Date string in YYYY-MM-DD format
+ */
+export const getDefaultDate = (selectedMonth: number | null | undefined, selectedYear: number | null | undefined): string => {
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+  const currentDay = now.getDate();
+  
+  const month = selectedMonth ?? currentMonth;
+  const year = selectedYear ?? currentYear;
+  
+  // If selected month/year matches current month/year, return today's date
+  if (month === currentMonth && year === currentYear) {
+    return `${year}-${String(month).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`;
+  }
+  
+  // Otherwise, return the first day of the selected month
+  return `${year}-${String(month).padStart(2, '0')}-01`;
+};
+
