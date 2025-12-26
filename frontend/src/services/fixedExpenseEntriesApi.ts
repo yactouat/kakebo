@@ -1,8 +1,9 @@
 import type { FixedExpenseEntry } from '../models/FixedExpenseEntry';
 import type { FixedExpenseEntryCreate, FixedExpenseEntryUpdate } from '../dtos/fixedExpenseEntry';
 import type { APIResponse } from '../types/api';
+import { getApiBaseUrl } from '../utils/api';
 
-const API_BASE_URL = 'http://localhost:8000/fixed-expense-entries';
+const API_BASE_URL = `${getApiBaseUrl()}/fixed-expense-entries`;
 
 export const fixedExpenseEntriesApi = {
   async copyToNextMonth(): Promise<{ copied_count: number }> {

@@ -1,6 +1,7 @@
 import type { APIResponse } from '../types/api';
+import { getApiBaseUrl } from '../utils/api';
 
-const API_BASE_URL = 'http://localhost:8000/available-cash/by-month';
+const API_BASE_URL = `${getApiBaseUrl()}/available-cash/by-month`;
 
 export interface AvailableCashData {
   available_cash: number;

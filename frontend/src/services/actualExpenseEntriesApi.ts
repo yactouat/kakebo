@@ -1,8 +1,9 @@
 import type { ActualExpenseEntry } from '../models/ActualExpenseEntry';
 import type { ActualExpenseEntryCreate, ActualExpenseEntryUpdate } from '../dtos/actualExpenseEntry';
 import type { APIResponse } from '../types/api';
+import { getApiBaseUrl } from '../utils/api';
 
-const API_BASE_URL = 'http://localhost:8000/actual-expense-entries';
+const API_BASE_URL = `${getApiBaseUrl()}/actual-expense-entries`;
 
 export const actualExpenseEntriesApi = {
   async getAll(month: string): Promise<ActualExpenseEntry[]> {
