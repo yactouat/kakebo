@@ -6,6 +6,7 @@ import { actualExpenseEntriesApi } from '../services/actualExpenseEntriesApi';
 import type { ActualExpenseEntry } from '../models/ActualExpenseEntry';
 import { formatCurrency } from '../utils/currency';
 import { monthToYYYYMM } from '../utils/months';
+import { CurrencyTooltip } from './shared/CurrencyTooltip';
 
 interface CategoryData {
   name: string;
@@ -264,34 +265,15 @@ const DonutChart = () => {
     );
   }
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (!active || !payload || payload.length === 0) return null;
-    
-    const data = payload[0];
-    const percentage = totalAmount > 0 ? ((data.value / totalAmount) * 100).toFixed(1) : '0';
-    
-    return (
-      <Paper
-        p="md"
-        shadow="md"
-        withBorder
-        style={{
-          backgroundColor: 'var(--mantine-color-body)',
-          border: '1px solid var(--mantine-color-gray-3)',
-        }}
-      >
-        <Text fw={600} size="sm" mb={4}>
-          {data.name}
-        </Text>
-        <Text fw={700} size="lg" c="blue">
-          {formatCurrency(data.value, 'EUR')}
-        </Text>
-        <Text size="xs" c="dimmed" mt={4}>
-          {percentage}% of {isItemView ? 'category total' : 'total'}
-        </Text>
-      </Paper>
-    );
-  };
+  const CustomTooltip = (props: any) => (
+    <CurrencyTooltip
+      {...props}
+      showLabel={false}
+      showPercentage={true}
+      totalAmount={totalAmount}
+      percentageLabel={isItemView ? 'category total' : 'total'}
+    />
+  );
 
   return (
     <>

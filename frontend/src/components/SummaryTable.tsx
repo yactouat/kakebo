@@ -7,6 +7,7 @@ import { incomeEntriesApi } from '../services/incomeEntriesApi';
 import { useAppStore } from '../stores/useAppStore';
 import { formatCurrency } from '../utils/currency';
 import { monthToYYYYMM } from '../utils/months';
+import { CurrencyTooltip } from './shared/CurrencyTooltip';
 
 interface SummaryData {
   category: string;
@@ -89,6 +90,50 @@ const SummaryTable = () => {
 
   const totalExpenses = totalFixedExpenses + totalActualExpenses;
 
+  // Custom tooltip that shows total expenses when hovering over expenses bar
+  const CustomTooltip = (props: any) => {
+    const { label, payload } = props;
+    const isExpenses = label === 'Expenses' && payload && payload.length > 1;
+    
+    if (isExpenses) {
+      return (
+        <Paper
+          p="md"
+          shadow="md"
+          withBorder
+          style={{
+            backgroundColor: 'var(--mantine-color-body)',
+            border: '1px solid var(--mantine-color-gray-3)',
+          }}
+        >
+          <Text fw={600} size="sm" mb={8}>
+            {label}
+          </Text>
+          {payload.map((item: any, index: number) => (
+            <Text key={index} size="sm" mb={4}>
+              <Text span c={item.color || 'dimmed'}>
+                ●{' '}
+              </Text>
+              <Text span fw={500}>
+                {item.name}:
+              </Text>{' '}
+              {formatCurrency(item.value, 'EUR')}
+            </Text>
+          ))}
+          <Text size="sm" mt={4} pt={4} style={{ borderTop: '1px solid var(--mantine-color-gray-3)' }}>
+            <Text span fw={700}>
+              Total Expenses:
+            </Text>{' '}
+            {formatCurrency(totalExpenses, 'EUR')}
+          </Text>
+        </Paper>
+      );
+    }
+    
+    // Use default CurrencyTooltip for Income bar
+    return <CurrencyTooltip {...props} />;
+  };
+
   return (
     <>
       <BarChart
@@ -102,7 +147,9 @@ const SummaryTable = () => {
         ]}
         tickLine="y"
         withLegend
-        withTooltip
+        tooltipProps={{
+          content: CustomTooltip,
+        }}
       />
       <Paper p="md" mt="md" withBorder>
         <Text fw={600} size="lg" mb="xs">

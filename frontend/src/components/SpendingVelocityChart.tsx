@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { actualExpenseEntriesApi } from '../services/actualExpenseEntriesApi';
 import { useAppStore } from '../stores/useAppStore';
 import { monthToYYYYMM } from '../utils/months';
+import { CurrencyTooltip } from './shared/CurrencyTooltip';
 
 interface DailySpendingData {
   day: number;
@@ -96,7 +97,9 @@ const SpendingVelocityChart = () => {
         ]}
         tickLine="x"
         withLegend
-        withTooltip
+        tooltipProps={{
+          content: CurrencyTooltip,
+        }}
         xAxisLabel="Day of Month"
         yAxisLabel="Amount (EUR)"
       />
