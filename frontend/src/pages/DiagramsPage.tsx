@@ -1,6 +1,7 @@
 import { Container, Title, Paper } from '@mantine/core';
-import MonthSelector from '../components/MonthSelector';
+
 import DonutChart from '../components/DonutChart';
+import MonthSelector from '../components/MonthSelector';
 
 const DiagramsPage = () => {
   return (

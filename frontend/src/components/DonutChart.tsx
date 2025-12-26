@@ -1,4 +1,5 @@
-import { DonutChart as MantineDonutChart, Text, Loader, Center } from '@mantine/core';
+import { Text, Loader, Center, Paper } from '@mantine/core';
+import { DonutChart as MantineDonutChart } from '@mantine/charts';
 import { useEffect, useState } from 'react';
 import { useAppStore } from '../stores/useAppStore';
 import { actualExpenseEntriesApi } from '../services/actualExpenseEntriesApi';
@@ -96,11 +97,43 @@ const DonutChart = () => {
     );
   }
 
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (!active || !payload || payload.length === 0) return null;
+    
+    const data = payload[0];
+    const percentage = totalAmount > 0 ? ((data.value / totalAmount) * 100).toFixed(1) : '0';
+    
+    return (
+      <Paper
+        p="md"
+        shadow="md"
+        withBorder
+        style={{
+          backgroundColor: 'var(--mantine-color-body)',
+          border: '1px solid var(--mantine-color-gray-3)',
+        }}
+      >
+        <Text fw={600} size="sm" mb={4}>
+          {data.name}
+        </Text>
+        <Text fw={700} size="lg" c="blue">
+          {formatCurrency(data.value, 'EUR')}
+        </Text>
+        <Text size="xs" c="dimmed" mt={4}>
+          {percentage}% of total
+        </Text>
+      </Paper>
+    );
+  };
+
   return (
     <>
       <MantineDonutChart
         data={categoryData}
         tooltipDataSource="segment"
+        tooltipProps={{
+          content: CustomTooltip,
+        }}
         size={300}
         thickness={40}
         mx="auto"
