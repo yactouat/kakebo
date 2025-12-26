@@ -11,8 +11,13 @@ const DiagramsPage = () => {
     <Container size="xl" style={{ width: '100%' }}>
       <MonthSelector />
       <SurvivalGauge />
+
+      <Paper p="xl" radius="md" withBorder>
+        <Title order={3} mb="md">Spending Velocity</Title>
+        <SpendingVelocityChart />
+      </Paper>
       
-      <Paper p="xl" radius="md" withBorder mb="xl">
+      <Paper mb="xl" mt="xl" p="xl" radius="md" withBorder>
         <Title order={3} mb="md">Income vs Expenses</Title>
         <SummaryTable />
       </Paper>
@@ -22,10 +27,6 @@ const DiagramsPage = () => {
         <DonutChart />
       </Paper>
 
-      <Paper p="xl" radius="md" withBorder>
-        <Title order={3} mb="md">Spending Velocity</Title>
-        <SpendingVelocityChart />
-      </Paper>
     </Container>
   );
 };

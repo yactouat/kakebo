@@ -88,9 +88,14 @@ const SurvivalGauge = () => {
 
   return (
     <Paper p="xl" radius="md" withBorder mb="xl">
-      <Title order={3} mb="md" ta="center">
-        Survival Gauge
-      </Title>
+      <Stack align="center" gap="xs" mb="md">
+        <Title order={3} ta="center">
+          Survival Gauge
+        </Title>
+        <Text c="dimmed" size="sm" ta="center" maw={600}>
+          Shows how much cash remains after expenses. Max is your starting point (Income - Fixed Expenses), and Available is what's left after actual expenses. The closer to zero, the more urgent your financial situation.
+        </Text>
+      </Stack>
       <Stack align="center" gap="md">
         <SemiCircleProgress
           fillDirection="left-to-right"
@@ -109,7 +114,7 @@ const SurvivalGauge = () => {
             Available: {formatCurrency(currentValue, 'EUR')}
           </Text>
           <Text c="dimmed" size="sm">
-            Max: {formatCurrency(maxValue, 'EUR')}
+            Max: {formatCurrency(maxValue, 'EUR')} (Income - Fixed Expenses)
           </Text>
         </Stack>
       </Stack>
