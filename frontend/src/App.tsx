@@ -11,29 +11,27 @@ import '@mantine/tiptap/styles.css';
 
 import './App.css';
 
-import { Container, MantineProvider } from '@mantine/core';
+import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
+import { Navigate, Route, Routes } from 'react-router-dom';
 
-import AvailableCash from './components/AvailableCash';
-import DayAvailableCash from './components/DayAvailableCash';
-import MonthSelector from './components/MonthSelector';
-import PecuniaryDataPanels from './components/PecuniaryDataPanels/PecuniaryDataPanels';
+import Layout from './components/Layout';
+import DiagramsPage from './pages/DiagramsPage';
+import LedgerPage from './pages/LedgerPage';
 
 const App = () => {
   return (
     <MantineProvider>
       <Notifications />
-      <div className="app-container">
-        <h1>kakebo</h1>
-        <Container size="xl" style={{ width: '100%' }}>
-          <MonthSelector />
-          <DayAvailableCash />
-          <PecuniaryDataPanels />
-          <AvailableCash />
-        </Container>
-      </div>
+      <Layout>
+        <Routes>
+          <Route element={<Navigate to="/ledger" replace />} path="/" />
+          <Route element={<DiagramsPage />} path="/diagrams" />
+          <Route element={<LedgerPage />} path="/ledger" />
+        </Routes>
+      </Layout>
     </MantineProvider>
-  )
+  );
 };
 
 export default App;
