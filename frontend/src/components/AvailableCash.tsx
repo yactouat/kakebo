@@ -7,14 +7,14 @@ import { getMonthName, monthToYYYYMM } from '../utils/months';
 import { useAppStore } from '../stores/useAppStore';
 
 const AvailableCash = () => {
-  const { activeTab, dataChangeCounter, selectedMonth } = useAppStore();
+  const { activeTab, dataChangeCounter, selectedMonth, selectedYear } = useAppStore();
   const [availableCashData, setAvailableCashData] = useState<AvailableCashData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const componentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (selectedMonth === null) {
+    if (selectedMonth === null || selectedYear === null) {
       setAvailableCashData(null);
       return;
     }
@@ -23,7 +23,7 @@ const AvailableCash = () => {
       setLoading(true);
       setError(null);
       try {
-        const monthString = monthToYYYYMM(selectedMonth);
+        const monthString = monthToYYYYMM(selectedMonth, selectedYear);
         const data = await availableCashApi.get(monthString);
         setAvailableCashData(data);
       } catch (err) {
@@ -35,11 +35,11 @@ const AvailableCash = () => {
     };
 
     fetchAvailableCash();
-  }, [dataChangeCounter, selectedMonth]);
+  }, [dataChangeCounter, selectedMonth, selectedYear]);
 
   // Auto-scroll to component if not visible in viewport
   useEffect(() => {
-    if (selectedMonth === null || loading || componentRef.current === null) {
+    if (selectedMonth === null || selectedYear === null || loading || componentRef.current === null) {
       return;
     }
 
@@ -65,9 +65,9 @@ const AvailableCash = () => {
     // Small delay to ensure DOM is updated (especially after tab content changes)
     const timeoutId = setTimeout(checkVisibilityAndScroll, 100);
     return () => clearTimeout(timeoutId);
-  }, [selectedMonth, loading, availableCashData, activeTab]);
+  }, [selectedMonth, selectedYear, loading, availableCashData, activeTab]);
 
-  if (selectedMonth === null) {
+  if (selectedMonth === null || selectedYear === null) {
     return null;
   }
 
@@ -76,7 +76,7 @@ const AvailableCash = () => {
   return (
     <Paper ref={componentRef} shadow="sm" p="md" mt="xl" withBorder>
       <Text size="lg" fw={500} mb="xs">
-        {monthName} Available Cash
+        {monthName} {selectedYear} Available Cash
       </Text>
       {loading ? (
         <Center>

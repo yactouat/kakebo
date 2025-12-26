@@ -43,7 +43,7 @@ export function useEntryTable<TEntry extends { id: number; amount: number }, TCr
   const [editingEntry, setEditingEntry] = useState<TEntry | null>(null);
   const [data, setData] = useState<TEntry[]>(initialData || []);
   const [loading, setLoading] = useState(false);
-  const { notifyDataChange, selectedMonth } = useAppStore();
+  const { notifyDataChange, selectedMonth, selectedYear } = useAppStore();
 
   const createForm = useForm<TCreate>({
     initialValues: getCreateInitialValues(),
@@ -56,12 +56,12 @@ export function useEntryTable<TEntry extends { id: number; amount: number }, TCr
   });
 
   const fetchEntries = async () => {
-    if (selectedMonth === null) {
+    if (selectedMonth === null || selectedYear === null) {
       return;
     }
     setLoading(true);
     try {
-      const monthString = monthToYYYYMM(selectedMonth);
+      const monthString = monthToYYYYMM(selectedMonth, selectedYear);
       const fetchedData = await api.getAll(monthString);
       setData(fetchedData);
     } catch (error) {
@@ -79,7 +79,7 @@ export function useEntryTable<TEntry extends { id: number; amount: number }, TCr
     if (!initialData) {
       fetchEntries();
     }
-  }, [initialData, selectedMonth]);
+  }, [initialData, selectedMonth, selectedYear]);
 
   const handleCreate = async (values: TCreate) => {
     try {

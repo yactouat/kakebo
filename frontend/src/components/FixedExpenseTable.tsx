@@ -17,13 +17,13 @@ interface FixedExpenseTableProps {
 }
 
 const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initialTotalShown }: FixedExpenseTableProps) => {
-  const { selectedMonth } = useAppStore();
+  const { selectedMonth, selectedYear } = useAppStore();
 
   // Helper to get default month and year
   const getDefaultMonthYear = () => {
     const now = new Date();
     const month = selectedMonth ?? now.getMonth() + 1;
-    const year = now.getFullYear();
+    const year = selectedYear ?? now.getFullYear();
     return { month, year };
   };
 
