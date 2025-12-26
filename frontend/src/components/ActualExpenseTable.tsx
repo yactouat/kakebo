@@ -1,5 +1,6 @@
 import { Button, Group, NumberInput, Select, TextInput, Table, ActionIcon, Checkbox } from '@mantine/core';
-import { IconPlus, IconEdit, IconTrash, IconArrowsJoin, IconChevronUp, IconChevronDown, IconArrowsUpDown } from '@tabler/icons-react';
+import { IconPlus, IconEdit, IconTrash, IconArrowsJoin, IconChevronUp, IconChevronDown, IconArrowsUpDown, IconSearch } from '@tabler/icons-react';
+import { useState, useMemo } from 'react';
 
 import { actualExpenseEntriesApi } from '../services/actualExpenseEntriesApi';
 import type { ActualExpenseEntryCreate, ActualExpenseEntryUpdate } from '../dtos/actualExpenseEntry';
@@ -36,6 +37,7 @@ interface ActualExpenseTableProps {
 
 const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initialTotalShown }: ActualExpenseTableProps) => {
   const { selectedMonth, selectedYear } = useAppStore();
+  const [itemFilter, setItemFilter] = useState('');
 
   const {
     bulkUpdateOpened,
@@ -123,6 +125,20 @@ const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initi
 
   const { sortedData, sortState, handleSort } = useTableSort('actualExpenseTable', data, getValue);
 
+  // Filter data by item name
+  const filteredData = useMemo(() => {
+    if (!itemFilter.trim()) {
+      return sortedData;
+    }
+    const filterLower = itemFilter.toLowerCase().trim();
+    return sortedData.filter((entry) => entry.item.toLowerCase().includes(filterLower));
+  }, [sortedData, itemFilter]);
+
+  // Recalculate totalShown based on filtered data
+  const filteredTotalShown = useMemo(() => {
+    return filteredData.reduce((sum, entry) => sum + entry.amount, 0);
+  }, [filteredData]);
+
   const getSortIcon = (columnKey: string) => {
     if (!sortState || sortState.column !== columnKey) {
       return <IconArrowsUpDown size={14} style={{ opacity: 0.3 }} />;
@@ -137,11 +153,11 @@ const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initi
   };
 
   const colSpan = 6; // checkbox, amount, date, item, category, actions
-  const allSelected = sortedData.length > 0 && selectedIds.length === sortedData.length;
-  const someSelected = selectedIds.length > 0 && selectedIds.length < sortedData.length;
+  const allSelected = filteredData.length > 0 && selectedIds.length === filteredData.length;
+  const someSelected = selectedIds.length > 0 && selectedIds.length < filteredData.length;
 
   const handleSelectAll = (checked: boolean) => {
-    setSelectedIds(checked ? sortedData.map((entry) => entry.id) : []);
+    setSelectedIds(checked ? filteredData.map((entry) => entry.id) : []);
   };
 
   const handleSelectRow = (entryId: number, checked: boolean) => {
@@ -204,6 +220,13 @@ const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initi
             </>
           )}
         </Group>
+        <TextInput
+          placeholder="Filter by item name..."
+          leftSection={<IconSearch size={16} />}
+          value={itemFilter}
+          onChange={(e) => setItemFilter(e.currentTarget.value)}
+          style={{ width: 250 }}
+        />
       </Group>
 
       <Table striped highlightOnHover withTableBorder withColumnBorders>
@@ -263,8 +286,8 @@ const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initi
                 Loading...
               </Table.Td>
             </Table.Tr>
-          ) : sortedData.length > 0 ? (
-            sortedData.map((entry) => {
+          ) : filteredData.length > 0 ? (
+            filteredData.map((entry) => {
               const categoryColor = getCategoryColor(entry.category);
               return (
                 <Table.Tr
@@ -329,7 +352,7 @@ const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initi
               Total Shown:
             </Table.Td>
             <Table.Td style={{ fontWeight: 'bold' }}>
-              {formatCurrency(totalShown, 'EUR')}
+              {formatCurrency(filteredTotalShown, 'EUR')}
             </Table.Td>
             <Table.Td></Table.Td>
           </Table.Tr>

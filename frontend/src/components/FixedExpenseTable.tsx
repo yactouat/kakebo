@@ -1,7 +1,7 @@
 import { Button, Group, NumberInput, Select, TextInput } from '@mantine/core';
-import { IconCopy, IconPlus, IconTrash, IconArrowsJoin } from '@tabler/icons-react';
+import { IconCopy, IconPlus, IconTrash, IconArrowsJoin, IconSearch } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 import { EntryModal, type FormField } from './shared/EntryModal';
 import { EntryTable, type TableColumn } from './shared/EntryTable';
@@ -22,6 +22,7 @@ interface FixedExpenseTableProps {
 const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initialTotalShown }: FixedExpenseTableProps) => {
   const { notifyDataChange, selectedMonth, selectedYear } = useAppStore();
   const [copyLoading, setCopyLoading] = useState(false);
+  const [itemFilter, setItemFilter] = useState('');
 
   // Helper to get default month and year
   const getDefaultMonthYear = () => {
@@ -147,6 +148,20 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
   };
 
   const { sortedData, sortState, handleSort } = useTableSort('fixedExpenseTable', data, getValue);
+
+  // Filter data by item name
+  const filteredData = useMemo(() => {
+    if (!itemFilter.trim()) {
+      return sortedData;
+    }
+    const filterLower = itemFilter.toLowerCase().trim();
+    return sortedData.filter((entry) => entry.item.toLowerCase().includes(filterLower));
+  }, [sortedData, itemFilter]);
+
+  // Recalculate totalShown based on filtered data
+  const filteredTotalShown = useMemo(() => {
+    return filteredData.reduce((sum, entry) => sum + entry.amount, 0);
+  }, [filteredData]);
 
   const columns: TableColumn<FixedExpenseEntry>[] = [
     {
@@ -333,11 +348,18 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
             </>
           )}
         </Group>
+        <TextInput
+          placeholder="Filter by item name..."
+          leftSection={<IconSearch size={16} />}
+          value={itemFilter}
+          onChange={(e) => setItemFilter(e.currentTarget.value)}
+          style={{ width: 250 }}
+        />
       </Group>
 
       <EntryTable
         columns={columns}
-        data={sortedData}
+        data={filteredData}
         emptyMessage="No fixed expense data available"
         loading={loading}
         onDelete={handleDelete}
@@ -346,7 +368,7 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
         selectedIds={selectedIds}
         sortState={sortState}
         onSort={handleSort}
-        totalShown={totalShown}
+        totalShown={filteredTotalShown}
       />
 
       <EntryModal

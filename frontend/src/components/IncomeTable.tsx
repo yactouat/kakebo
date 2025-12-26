@@ -1,5 +1,6 @@
 import { Button, Group, NumberInput, TextInput } from '@mantine/core';
-import { IconPlus, IconTrash, IconArrowsJoin } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconArrowsJoin, IconSearch } from '@tabler/icons-react';
+import { useState, useMemo } from 'react';
 
 import { EntryModal, type FormField } from './shared/EntryModal';
 import { EntryTable, type TableColumn } from './shared/EntryTable';
@@ -19,6 +20,7 @@ interface IncomeTableProps {
 
 const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalShown }: IncomeTableProps) => {
   const { selectedMonth, selectedYear } = useAppStore();
+  const [itemFilter, setItemFilter] = useState('');
 
   const {
     bulkUpdateOpened,
@@ -95,6 +97,20 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
   };
 
   const { sortedData, sortState, handleSort } = useTableSort('incomeTable', data, getValue);
+
+  // Filter data by item name
+  const filteredData = useMemo(() => {
+    if (!itemFilter.trim()) {
+      return sortedData;
+    }
+    const filterLower = itemFilter.toLowerCase().trim();
+    return sortedData.filter((entry) => entry.item.toLowerCase().includes(filterLower));
+  }, [sortedData, itemFilter]);
+
+  // Recalculate totalShown based on filtered data
+  const filteredTotalShown = useMemo(() => {
+    return filteredData.reduce((sum, entry) => sum + entry.amount, 0);
+  }, [filteredData]);
 
   const columns: TableColumn<IncomeEntry>[] = [
     {
@@ -246,11 +262,18 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
             </>
           )}
         </Group>
+        <TextInput
+          placeholder="Filter by item name..."
+          leftSection={<IconSearch size={16} />}
+          value={itemFilter}
+          onChange={(e) => setItemFilter(e.currentTarget.value)}
+          style={{ width: 250 }}
+        />
       </Group>
 
       <EntryTable
         columns={columns}
-        data={sortedData}
+        data={filteredData}
         emptyMessage="No income data available"
         loading={loading}
         onDelete={handleDelete}
@@ -259,7 +282,7 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
         selectedIds={selectedIds}
         sortState={sortState}
         onSort={handleSort}
-        totalShown={totalShown}
+        totalShown={filteredTotalShown}
       />
 
       <EntryModal
