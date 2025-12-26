@@ -12,18 +12,18 @@ import { useEntryTable } from '../hooks/useEntryTable';
 
 // Category color mapping - using Mantine color names
 const categoryColors: Record<ExpenseCategory, { bg: string; border: string; text: string }> = {
-  'essential': { bg: '#FFF4E6', border: '#FF6B35', text: '#D9480F' },
   'comfort': { bg: '#EBFBEE', border: '#51CF66', text: '#2F9E44' },
   'entertainment and leisure': { bg: '#F3E8FF', border: '#9775FA', text: '#7048E8' },
+  'essential': { bg: '#FFF4E6', border: '#FF6B35', text: '#D9480F' },
   'extras': { bg: '#E7F5FF', border: '#339AF0', text: '#1C7ED6' },
   'unforeseen': { bg: '#FFF5F5', border: '#FF6B6B', text: '#C92A2A' },
 };
 
 // Category options for select
 const categoryOptions = [
-  { value: 'essential', label: 'Essential' },
   { value: 'comfort', label: 'Comfort' },
   { value: 'entertainment and leisure', label: 'Entertainment and Leisure' },
+  { value: 'essential', label: 'Essential' },
   { value: 'extras', label: 'Extras' },
   { value: 'unforeseen', label: 'Unforeseen' },
 ];

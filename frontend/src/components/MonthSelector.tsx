@@ -21,7 +21,7 @@ const MonthSelector = () => {
   const yearOptions = getYearOptions();
 
   return (
-    <Group>
+    <Group mb="xl">
       <Select
         label="Select Month"
         placeholder="Choose a month"
