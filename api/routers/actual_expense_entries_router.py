@@ -7,11 +7,13 @@ from exceptions import ValidationError
 from schemas import APIResponse
 from services.actual_expense_entries_services import (
     create_actual_expense_entry,
+    delete_actual_expense_entry,
     get_all_actual_expense_entries_by_month,
     get_actual_expense_entry_by_id,
     update_actual_expense_entry,
-    delete_actual_expense_entry,
 )
+from services.balance_entry_services import update_balance_entry_for_month
+from utils.month_utils import extract_month_from_date, is_previous_month
 
 
 router = APIRouter(prefix="/actual-expense-entries", tags=["actual-expense-entries"])
@@ -28,6 +30,12 @@ async def create_entry(entry: ActualExpenseEntryCreate):
     try:
         # The entry DTO is already validated by FastAPI/Pydantic
         created = create_actual_expense_entry(entry)
+        
+        # Check if this is month -1 and update balance if needed
+        month = extract_month_from_date(entry.date)
+        if month and is_previous_month(month):
+            update_balance_entry_for_month(month)
+        
         return APIResponse(data=ActualExpenseEntry(**created), msg="Actual expense entry created successfully")
     except ValidationError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -83,6 +91,14 @@ async def update_entry(entry_id: int, entry_update: ActualExpenseEntryUpdate):
         updated = update_actual_expense_entry(entry_id, entry_update, existing)
         if updated is None:
             raise HTTPException(status_code=500, detail="Failed to update actual expense entry")
+        
+        # Check if this is month -1 and update balance if needed
+        # Use updated date if provided, otherwise use existing date
+        date_to_check = entry_update.date if entry_update.date is not None else existing["date"]
+        month = extract_month_from_date(date_to_check)
+        if month and is_previous_month(month):
+            update_balance_entry_for_month(month)
+        
         return APIResponse(data=ActualExpenseEntry(**updated), msg="Actual expense entry updated successfully")
     except HTTPException:
         raise
@@ -95,8 +111,19 @@ async def update_entry(entry_id: int, entry_update: ActualExpenseEntryUpdate):
 @router.delete("/{entry_id}", response_model=APIResponse[dict])
 async def delete_entry(entry_id: int):
     """Delete an actual expense entry by ID."""
+    # Get existing entry to check month before deletion
+    existing = get_actual_expense_entry_by_id(entry_id)
+    if existing is None:
+        raise HTTPException(status_code=404, detail=f"Actual expense entry with id {entry_id} not found")
+    
     deleted = delete_actual_expense_entry(entry_id)
     if not deleted:
         raise HTTPException(status_code=404, detail=f"Actual expense entry with id {entry_id} not found")
+    
+    # Check if this was month -1 and update balance if needed
+    month = extract_month_from_date(existing["date"])
+    if month and is_previous_month(month):
+        update_balance_entry_for_month(month)
+    
     return APIResponse(data=None, msg="Actual expense entry deleted successfully")
 

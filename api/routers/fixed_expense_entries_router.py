@@ -5,13 +5,15 @@ from typing import List
 from dtos.fixed_expense_entry import FixedExpenseEntry, FixedExpenseEntryCreate, FixedExpenseEntryUpdate
 from exceptions import ValidationError
 from schemas import APIResponse
+from services.balance_entry_services import update_balance_entry_for_month
 from services.fixed_expense_entries_services import (
     create_fixed_expense_entry,
+    delete_fixed_expense_entry,
     get_all_fixed_expense_entries_by_month,
     get_fixed_expense_entry_by_id,
     update_fixed_expense_entry,
-    delete_fixed_expense_entry,
 )
+from utils.month_utils import is_previous_month
 
 
 router = APIRouter(prefix="/fixed-expense-entries", tags=["fixed-expense-entries"])
@@ -28,6 +30,12 @@ async def create_entry(entry: FixedExpenseEntryCreate):
     try:
         # The entry DTO is already validated by FastAPI/Pydantic
         created = create_fixed_expense_entry(entry)
+        
+        # Check if this is month -1 and update balance if needed
+        month_str = f"{created['year']}-{created['month']:02d}"
+        if is_previous_month(month_str):
+            update_balance_entry_for_month(month_str)
+        
         return APIResponse(data=FixedExpenseEntry(**created), msg="Fixed expense entry created successfully")
     except ValidationError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -83,6 +91,15 @@ async def update_entry(entry_id: int, entry_update: FixedExpenseEntryUpdate):
         updated = update_fixed_expense_entry(entry_id, entry_update, existing)
         if updated is None:
             raise HTTPException(status_code=500, detail="Failed to update fixed expense entry")
+        
+        # Check if this is month -1 and update balance if needed
+        # Use updated month/year if provided, otherwise use existing
+        year_to_check = entry_update.year if entry_update.year is not None else existing["year"]
+        month_to_check = entry_update.month if entry_update.month is not None else existing["month"]
+        month_str = f"{year_to_check}-{month_to_check:02d}"
+        if is_previous_month(month_str):
+            update_balance_entry_for_month(month_str)
+        
         return APIResponse(data=FixedExpenseEntry(**updated), msg="Fixed expense entry updated successfully")
     except HTTPException:
         raise
@@ -95,8 +112,19 @@ async def update_entry(entry_id: int, entry_update: FixedExpenseEntryUpdate):
 @router.delete("/{entry_id}", response_model=APIResponse[dict])
 async def delete_entry(entry_id: int):
     """Delete a fixed expense entry by ID."""
+    # Get existing entry to check month before deletion
+    existing = get_fixed_expense_entry_by_id(entry_id)
+    if existing is None:
+        raise HTTPException(status_code=404, detail=f"Fixed expense entry with id {entry_id} not found")
+    
     deleted = delete_fixed_expense_entry(entry_id)
     if not deleted:
         raise HTTPException(status_code=404, detail=f"Fixed expense entry with id {entry_id} not found")
+    
+    # Check if this was month -1 and update balance if needed
+    month_str = f"{existing['year']}-{existing['month']:02d}"
+    if is_previous_month(month_str):
+        update_balance_entry_for_month(month_str)
+    
     return APIResponse(data=None, msg="Fixed expense entry deleted successfully")
 
