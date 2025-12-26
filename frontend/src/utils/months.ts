@@ -67,13 +67,13 @@ export const getMonthName = (monthNumber: number): string => {
 
 /**
  * Generate year options for Select components.
- * @param startYear - Starting year (defaults to current year - 5)
+ * @param startYear - Starting year (defaults to 2025)
  * @param endYear - Ending year (defaults to current year + 5)
  * @returns Array of year options in { value, label } format
  */
 export const getYearOptions = (startYear?: number, endYear?: number): Array<{ value: string; label: string }> => {
   const currentYear = new Date().getFullYear();
-  const start = startYear ?? currentYear - 5;
+  const start = startYear ?? 2025;
   const end = endYear ?? currentYear + 5;
   const years: Array<{ value: string; label: string }> = [];
   for (let year = start; year <= end; year++) {
