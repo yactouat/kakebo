@@ -214,7 +214,7 @@ async def bulk_update_entries(request: BulkFixedExpenseEntryUpdateRequest):
 async def merge_entries(request: BulkFixedExpenseEntryMergeRequest):
     """Merge multiple fixed expense entries into one.
     
-    Merges entries by summing amounts, combining items, using first entry's
+    Merges entries by summing amounts, combining items, using most recent
     month/year and currency. Original entries are deleted.
     """
     if not request.entry_ids or len(request.entry_ids) < 2:

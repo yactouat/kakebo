@@ -6,6 +6,7 @@ from db import get_connection
 from dtos.fixed_expense_entry import FixedExpenseEntryCreate, FixedExpenseEntryUpdate
 from exceptions import ValidationError
 from validators.month_validator import validate_month_format
+from utils.merge_utils import validate_and_fetch_entries, calculate_common_merged_values
 
 
 def bulk_delete_fixed_expense_entries(entry_ids: List[int]) -> int:
@@ -251,7 +252,7 @@ def merge_fixed_expense_entries(entry_ids: List[int]) -> Dict[str, Any]:
     Merges entries by:
     - Summing amounts
     - Combining items (comma-separated)
-    - Using first entry's month/year
+    - Using most recent month/year
     - Using first entry's currency
     
     Args:
@@ -263,30 +264,27 @@ def merge_fixed_expense_entries(entry_ids: List[int]) -> Dict[str, Any]:
     Raises:
         ValidationError: If less than 2 entries provided or entries not found
     """
-    if len(entry_ids) < 2:
-        raise ValidationError("At least 2 entries are required to merge")
+    # Validate and fetch all entries to merge
+    entries = validate_and_fetch_entries(
+        entry_ids,
+        get_fixed_expense_entry_by_id,
+        "Fixed expense entry"
+    )
     
-    # Get all entries to merge
-    entries = []
-    for entry_id in entry_ids:
-        entry = get_fixed_expense_entry_by_id(entry_id)
-        if entry is None:
-            raise ValidationError(f"Fixed expense entry with id {entry_id} not found")
-        entries.append(entry)
+    # Calculate common merged values
+    common_values = calculate_common_merged_values(entries)
     
-    # Calculate merged values
-    merged_amount = sum(entry["amount"] for entry in entries)
-    merged_items = ", ".join(entry["item"] for entry in entries if entry.get("item"))
-    merged_currency = entries[0].get("currency", "EUR")
-    # Use first entry's month/year
-    merged_month = entries[0].get("month", datetime.now().month)
-    merged_year = entries[0].get("year", datetime.now().year)
+    # Calculate merged values specific to fixed expense entries
+    # Use most recent month/year (compare by year first, then month)
+    most_recent_entry = max(entries, key=lambda e: (e.get("year", 0), e.get("month", 0)))
+    merged_month = most_recent_entry.get("month", datetime.now().month)
+    merged_year = most_recent_entry.get("year", datetime.now().year)
     
     # Create merged entry
     merged_entry = create_fixed_expense_entry(FixedExpenseEntryCreate(
-        amount=merged_amount,
-        item=merged_items,
-        currency=merged_currency,
+        amount=common_values["amount"],
+        item=common_values["items"],
+        currency=common_values["currency"],
         month=merged_month,
         year=merged_year
     ))

@@ -192,7 +192,7 @@ async def bulk_update_entries(request: BulkIncomeEntryUpdateRequest):
 async def merge_entries(request: BulkIncomeEntryMergeRequest):
     """Merge multiple income entries into one.
     
-    Merges entries by summing amounts, combining items, using earliest date,
+    Merges entries by summing amounts, combining items, using most recent date,
     and using first entry's currency. Original entries are deleted.
     """
     if not request.entry_ids or len(request.entry_ids) < 2:

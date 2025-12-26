@@ -5,6 +5,7 @@ from db import get_connection
 from dtos.actual_expense_entry import ActualExpenseEntryCreate, ActualExpenseEntryUpdate
 from exceptions import ValidationError
 from validators.month_validator import validate_month_format
+from utils.merge_utils import validate_and_fetch_entries, calculate_common_merged_values
 
 
 def bulk_delete_actual_expense_entries(entry_ids: List[int]) -> int:
@@ -203,7 +204,7 @@ def merge_actual_expense_entries(entry_ids: List[int]) -> Dict[str, Any]:
     Merges entries by:
     - Summing amounts
     - Combining items (comma-separated)
-    - Using earliest date
+    - Using most recent date
     - Using first entry's category
     - Using first entry's currency
     
@@ -216,22 +217,18 @@ def merge_actual_expense_entries(entry_ids: List[int]) -> Dict[str, Any]:
     Raises:
         ValidationError: If less than 2 entries provided or entries not found
     """
-    if len(entry_ids) < 2:
-        raise ValidationError("At least 2 entries are required to merge")
+    # Validate and fetch all entries to merge
+    entries = validate_and_fetch_entries(
+        entry_ids,
+        get_actual_expense_entry_by_id,
+        "Actual expense entry"
+    )
     
-    # Get all entries to merge
-    entries = []
-    for entry_id in entry_ids:
-        entry = get_actual_expense_entry_by_id(entry_id)
-        if entry is None:
-            raise ValidationError(f"Actual expense entry with id {entry_id} not found")
-        entries.append(entry)
+    # Calculate common merged values
+    common_values = calculate_common_merged_values(entries)
     
-    # Calculate merged values
-    merged_amount = sum(entry["amount"] for entry in entries)
-    merged_items = ", ".join(entry["item"] for entry in entries if entry.get("item"))
-    merged_date = min(entry["date"] for entry in entries)
-    merged_currency = entries[0].get("currency", "EUR")
+    # Calculate merged values specific to actual expense entries
+    merged_date = max(entry["date"] for entry in entries)
     # Use first entry's category (stored as string in DB)
     from dtos.actual_expense_entry import ExpenseCategory
     merged_category_str = entries[0].get("category", "essential")
@@ -243,11 +240,11 @@ def merge_actual_expense_entries(entry_ids: List[int]) -> Dict[str, Any]:
     
     # Create merged entry
     merged_entry = create_actual_expense_entry(ActualExpenseEntryCreate(
-        amount=merged_amount,
+        amount=common_values["amount"],
         date=merged_date,
-        item=merged_items,
+        item=common_values["items"],
         category=merged_category,
-        currency=merged_currency
+        currency=common_values["currency"]
     ))
     
     # Delete original entries

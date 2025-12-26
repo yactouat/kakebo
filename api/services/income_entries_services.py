@@ -5,6 +5,7 @@ from db import get_connection
 from dtos.income_entry import IncomeEntryCreate, IncomeEntryUpdate
 from exceptions import ValidationError
 from validators.month_validator import validate_month_format
+from utils.merge_utils import validate_and_fetch_entries, calculate_common_merged_values
 
 
 def bulk_delete_income_entries(entry_ids: List[int]) -> int:
@@ -184,7 +185,7 @@ def merge_income_entries(entry_ids: List[int]) -> Dict[str, Any]:
     Merges entries by:
     - Summing amounts
     - Combining items (comma-separated)
-    - Using earliest date
+    - Using most recent date
     - Using first entry's currency
     
     Args:
@@ -196,29 +197,25 @@ def merge_income_entries(entry_ids: List[int]) -> Dict[str, Any]:
     Raises:
         ValidationError: If less than 2 entries provided or entries not found
     """
-    if len(entry_ids) < 2:
-        raise ValidationError("At least 2 entries are required to merge")
+    # Validate and fetch all entries to merge
+    entries = validate_and_fetch_entries(
+        entry_ids,
+        get_income_entry_by_id,
+        "Income entry"
+    )
     
-    # Get all entries to merge
-    entries = []
-    for entry_id in entry_ids:
-        entry = get_income_entry_by_id(entry_id)
-        if entry is None:
-            raise ValidationError(f"Income entry with id {entry_id} not found")
-        entries.append(entry)
+    # Calculate common merged values
+    common_values = calculate_common_merged_values(entries)
     
-    # Calculate merged values
-    merged_amount = sum(entry["amount"] for entry in entries)
-    merged_items = ", ".join(entry["item"] for entry in entries if entry.get("item"))
-    merged_date = min(entry["date"] for entry in entries)
-    merged_currency = entries[0].get("currency", "EUR")
+    # Calculate merged values specific to income entries
+    merged_date = max(entry["date"] for entry in entries)
     
     # Create merged entry
     merged_entry = create_income_entry(IncomeEntryCreate(
-        amount=merged_amount,
+        amount=common_values["amount"],
         date=merged_date,
-        item=merged_items,
-        currency=merged_currency
+        item=common_values["items"],
+        currency=common_values["currency"]
     ))
     
     # Delete original entries

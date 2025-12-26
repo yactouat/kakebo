@@ -192,7 +192,7 @@ async def bulk_update_entries(request: BulkActualExpenseEntryUpdateRequest):
 async def merge_entries(request: BulkActualExpenseEntryMergeRequest):
     """Merge multiple actual expense entries into one.
     
-    Merges entries by summing amounts, combining items, using earliest date,
+    Merges entries by summing amounts, combining items, using most recent date,
     first entry's category and currency. Original entries are deleted.
     """
     if not request.entry_ids or len(request.entry_ids) < 2:
