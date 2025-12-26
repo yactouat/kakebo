@@ -2,10 +2,18 @@ from fastapi import APIRouter, HTTPException
 from pydantic import ValidationError as PydanticValidationError
 from typing import List
 
-from dtos.actual_expense_entry import ActualExpenseEntry, ActualExpenseEntryCreate, ActualExpenseEntryUpdate
+from dtos.actual_expense_entry import (
+    ActualExpenseEntry,
+    ActualExpenseEntryCreate,
+    ActualExpenseEntryUpdate,
+    BulkActualExpenseEntryDeleteRequest,
+    BulkActualExpenseEntryUpdateRequest,
+)
 from exceptions import ValidationError
 from schemas import APIResponse
 from services.actual_expense_entries_services import (
+    bulk_delete_actual_expense_entries,
+    bulk_update_actual_expense_entries,
     create_actual_expense_entry,
     delete_actual_expense_entry,
     get_all_actual_expense_entries_by_month,
@@ -106,6 +114,76 @@ async def update_entry(entry_id: int, entry_update: ActualExpenseEntryUpdate):
         raise HTTPException(status_code=422, detail=f"Validation error: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update actual expense entry: {str(e)}")
+
+
+@router.delete("/bulk", response_model=APIResponse[dict])
+async def bulk_delete_entries(request: BulkActualExpenseEntryDeleteRequest):
+    """Delete multiple actual expense entries by IDs."""
+    if not request.entry_ids:
+        raise HTTPException(status_code=400, detail="No entry IDs provided")
+    
+    # Get existing entries to check months before deletion
+    existing_entries = []
+    for entry_id in request.entry_ids:
+        existing = get_actual_expense_entry_by_id(entry_id)
+        if existing:
+            existing_entries.append(existing)
+    
+    if not existing_entries:
+        raise HTTPException(status_code=404, detail="No entries found with provided IDs")
+    
+    deleted_count = bulk_delete_actual_expense_entries(request.entry_ids)
+    
+    # Check if any were month -1 and update balance if needed
+    months_to_update = set()
+    for existing in existing_entries:
+        month = extract_month_from_date(existing["date"])
+        if month and is_previous_month(month):
+            months_to_update.add(month)
+    
+    for month in months_to_update:
+        update_balance_entry_for_month(month)
+    
+    return APIResponse(
+        data={"deleted_count": deleted_count},
+        msg=f"Successfully deleted {deleted_count} actual expense entr{'y' if deleted_count == 1 else 'ies'}"
+    )
+
+
+@router.put("/bulk", response_model=APIResponse[dict])
+async def bulk_update_entries(request: BulkActualExpenseEntryUpdateRequest):
+    """Update multiple actual expense entries with the same update data."""
+    if not request.entry_ids:
+        raise HTTPException(status_code=400, detail="No entry IDs provided")
+    
+    try:
+        updated_count = bulk_update_actual_expense_entries(request.entry_ids, request.update)
+        
+        if updated_count == 0:
+            raise HTTPException(status_code=404, detail="No entries found with provided IDs")
+        
+        # Check if any were month -1 and update balance if needed
+        # Get existing entries to check months
+        months_to_update = set()
+        for entry_id in request.entry_ids:
+            existing = get_actual_expense_entry_by_id(entry_id)
+            if existing:
+                date_to_check = request.update.date if request.update.date is not None else existing["date"]
+                month = extract_month_from_date(date_to_check)
+                if month and is_previous_month(month):
+                    months_to_update.add(month)
+        
+        for month in months_to_update:
+            update_balance_entry_for_month(month)
+        
+        return APIResponse(
+            data={"updated_count": updated_count},
+            msg=f"Successfully updated {updated_count} actual expense entr{'y' if updated_count == 1 else 'ies'}"
+        )
+    except PydanticValidationError as e:
+        raise HTTPException(status_code=422, detail=f"Validation error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update actual expense entries: {str(e)}")
 
 
 @router.delete("/{entry_id}", response_model=APIResponse[dict])

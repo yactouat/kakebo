@@ -1,5 +1,5 @@
 import { Button, Group, NumberInput, TextInput } from '@mantine/core';
-import { IconPlus } from '@tabler/icons-react';
+import { IconPlus, IconTrash } from '@tabler/icons-react';
 
 import { EntryModal, type FormField } from './shared/EntryModal';
 import { EntryTable, type TableColumn } from './shared/EntryTable';
@@ -20,6 +20,8 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
   const { selectedMonth, selectedYear } = useAppStore();
 
   const {
+    bulkUpdateOpened,
+    closeBulkUpdate,
     closeCreate,
     closeEdit,
     createForm,
@@ -27,12 +29,17 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
     data,
     editForm,
     editOpened,
+    handleBulkDelete,
+    handleBulkUpdate,
     handleCreate,
     handleDelete,
     handleEdit,
     handleUpdate,
     loading,
+    openBulkUpdate,
     openCreate,
+    selectedIds,
+    setSelectedIds,
     totalShown,
   } = useEntryTable<IncomeEntry, IncomeEntryCreate, IncomeEntryUpdate>({
     api: incomeEntriesApi,
@@ -170,15 +177,44 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
   return (
     <>
       <Group justify="space-between" mb="md">
-        <Button 
-          leftSection={<IconPlus size={16} />} 
-          onClick={() => {
-            createForm.setFieldValue('date', getDefaultDate(selectedMonth, selectedYear));
-            openCreate();
-          }}
-        >
-          Add Income Entry
-        </Button>
+        <Group>
+          <Button 
+            leftSection={<IconPlus size={16} />} 
+            onClick={() => {
+              createForm.setFieldValue('date', getDefaultDate(selectedMonth, selectedYear));
+              openCreate();
+            }}
+          >
+            Add Income Entry
+          </Button>
+          {selectedIds.length > 0 && (
+            <>
+              <Button
+                leftSection={<IconTrash size={16} />}
+                color="red"
+                onClick={handleBulkDelete}
+                variant="light"
+              >
+                Delete Selected ({selectedIds.length})
+              </Button>
+              <Button
+                onClick={() => {
+                  // Initialize bulk update form with empty values
+                  editForm.setValues({
+                    amount: undefined,
+                    date: undefined,
+                    item: undefined,
+                    currency: undefined,
+                  });
+                  openBulkUpdate();
+                }}
+                variant="light"
+              >
+                Update Selected ({selectedIds.length})
+              </Button>
+            </>
+          )}
+        </Group>
       </Group>
 
       <EntryTable
@@ -188,6 +224,8 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
         loading={loading}
         onDelete={handleDelete}
         onEdit={handleEdit}
+        onSelectionChange={setSelectedIds}
+        selectedIds={selectedIds}
         totalShown={totalShown}
       />
 
@@ -209,6 +247,16 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
         opened={editOpened}
         submitLabel="Update"
         title="Edit Income Entry"
+      />
+
+      <EntryModal
+        fields={editFields}
+        form={editForm}
+        onClose={closeBulkUpdate}
+        onSubmit={handleBulkUpdate}
+        opened={bulkUpdateOpened}
+        submitLabel="Update Selected"
+        title={`Update ${selectedIds.length} Income Entr${selectedIds.length === 1 ? 'y' : 'ies'}`}
       />
     </>
   );

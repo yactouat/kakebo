@@ -42,3 +42,12 @@ class ActualExpenseEntryUpdate(BaseModel):
         ["amount", "date", "item", "category", "currency"]
     )
 
+
+class BulkActualExpenseEntryDeleteRequest(BaseModel):
+    entry_ids: list[int]
+
+
+class BulkActualExpenseEntryUpdateRequest(BaseModel):
+    entry_ids: list[int]
+    update: ActualExpenseEntryUpdate
+

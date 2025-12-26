@@ -28,3 +28,12 @@ class IncomeEntryUpdate(BaseModel):
 
     validate_no_null_values = create_no_null_validator(['amount', 'date', 'item', 'currency'])
 
+
+class BulkIncomeEntryDeleteRequest(BaseModel):
+    entry_ids: list[int]
+
+
+class BulkIncomeEntryUpdateRequest(BaseModel):
+    entry_ids: list[int]
+    update: IncomeEntryUpdate
+

@@ -1,4 +1,4 @@
-import { Button, Group, NumberInput, Select, TextInput, Table, ActionIcon } from '@mantine/core';
+import { Button, Group, NumberInput, Select, TextInput, Table, ActionIcon, Checkbox } from '@mantine/core';
 import { IconPlus, IconEdit, IconTrash } from '@tabler/icons-react';
 
 import { actualExpenseEntriesApi } from '../services/actualExpenseEntriesApi';
@@ -37,6 +37,8 @@ const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initi
   const { selectedMonth, selectedYear } = useAppStore();
 
   const {
+    bulkUpdateOpened,
+    closeBulkUpdate,
     closeCreate,
     closeEdit,
     createForm,
@@ -44,12 +46,17 @@ const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initi
     data,
     editForm,
     editOpened,
+    handleBulkDelete,
+    handleBulkUpdate,
     handleCreate,
     handleDelete,
     handleEdit,
     handleUpdate,
     loading,
+    openBulkUpdate,
     openCreate,
+    selectedIds,
+    setSelectedIds,
     totalShown,
   } = useEntryTable<ActualExpenseEntry, ActualExpenseEntryCreate, ActualExpenseEntryUpdate>({
     api: actualExpenseEntriesApi,
@@ -96,25 +103,77 @@ const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initi
     return categoryColors[category] || { bg: '#F8F9FA', border: '#868E96', text: '#495057' };
   };
 
-  const colSpan = 5; // amount, date, item, category, actions
+  const colSpan = 6; // checkbox, amount, date, item, category, actions
+  const allSelected = data.length > 0 && selectedIds.length === data.length;
+  const someSelected = selectedIds.length > 0 && selectedIds.length < data.length;
+
+  const handleSelectAll = (checked: boolean) => {
+    setSelectedIds(checked ? data.map((entry) => entry.id) : []);
+  };
+
+  const handleSelectRow = (entryId: number, checked: boolean) => {
+    if (checked) {
+      setSelectedIds([...selectedIds, entryId]);
+    } else {
+      setSelectedIds(selectedIds.filter((id) => id !== entryId));
+    }
+  };
 
   return (
     <>
       <Group justify="space-between" mb="md">
-        <Button 
-          leftSection={<IconPlus size={16} />} 
-          onClick={() => {
-            createForm.setFieldValue('date', getDefaultDate(selectedMonth, selectedYear));
-            openCreate();
-          }}
-        >
-          Add Actual Expense Entry
-        </Button>
+        <Group>
+          <Button 
+            leftSection={<IconPlus size={16} />} 
+            onClick={() => {
+              createForm.setFieldValue('date', getDefaultDate(selectedMonth, selectedYear));
+              openCreate();
+            }}
+          >
+            Add Actual Expense Entry
+          </Button>
+          {selectedIds.length > 0 && (
+            <>
+              <Button
+                leftSection={<IconTrash size={16} />}
+                color="red"
+                onClick={handleBulkDelete}
+                variant="light"
+              >
+                Delete Selected ({selectedIds.length})
+              </Button>
+              <Button
+                onClick={() => {
+                  // Initialize bulk update form with empty values
+                  editForm.setValues({
+                    amount: undefined,
+                    date: undefined,
+                    item: undefined,
+                    category: undefined,
+                    currency: undefined,
+                  });
+                  openBulkUpdate();
+                }}
+                variant="light"
+              >
+                Update Selected ({selectedIds.length})
+              </Button>
+            </>
+          )}
+        </Group>
       </Group>
 
       <Table striped highlightOnHover withTableBorder withColumnBorders>
         <Table.Thead>
           <Table.Tr>
+            <Table.Th style={{ width: '40px' }}>
+              <Checkbox
+                checked={allSelected}
+                indeterminate={someSelected}
+                onChange={(event) => handleSelectAll(event.currentTarget.checked)}
+                aria-label="Select all"
+              />
+            </Table.Th>
             <Table.Th>Amount</Table.Th>
             <Table.Th>Date</Table.Th>
             <Table.Th>Item</Table.Th>
@@ -140,6 +199,13 @@ const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initi
                     borderLeft: `4px solid ${categoryColor.border}`,
                   }}
                 >
+                  <Table.Td>
+                    <Checkbox
+                      checked={selectedIds.includes(entry.id)}
+                      onChange={(event) => handleSelectRow(entry.id, event.currentTarget.checked)}
+                      aria-label={`Select entry ${entry.id}`}
+                    />
+                  </Table.Td>
                   <Table.Td>{formatCurrency(entry.amount, entry.currency)}</Table.Td>
                   <Table.Td>{entry.date}</Table.Td>
                   <Table.Td>{entry.item}</Table.Td>
@@ -184,7 +250,7 @@ const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initi
         </Table.Tbody>
         <Table.Tfoot>
           <Table.Tr>
-            <Table.Td colSpan={3} style={{ fontWeight: 'bold', textAlign: 'right' }}>
+            <Table.Td colSpan={4} style={{ fontWeight: 'bold', textAlign: 'right' }}>
               Total Shown:
             </Table.Td>
             <Table.Td style={{ fontWeight: 'bold' }}>
@@ -311,6 +377,62 @@ const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initi
         opened={editOpened}
         submitLabel="Update"
         title="Edit Actual Expense Entry"
+      />
+
+      <EntryModal
+        fields={[
+          {
+            key: 'amount',
+            render: (form) => (
+              <NumberInput
+                label="Amount"
+                placeholder="Enter amount (leave empty to keep existing)"
+                min={0}
+                step={0.01}
+                decimalScale={2}
+                {...form.getInputProps('amount')}
+              />
+            ),
+          },
+          {
+            key: 'date',
+            render: (form) => (
+              <TextInput
+                label="Date"
+                type="date"
+                placeholder="Leave empty to keep existing"
+                {...form.getInputProps('date')}
+              />
+            ),
+          },
+          {
+            key: 'item',
+            render: (form) => (
+              <TextInput
+                label="Item"
+                placeholder="Enter item description (leave empty to keep existing)"
+                {...form.getInputProps('item')}
+              />
+            ),
+          },
+          {
+            key: 'category',
+            render: (form) => (
+              <Select
+                label="Category"
+                placeholder="Select category (leave empty to keep existing)"
+                data={categoryOptions}
+                {...form.getInputProps('category')}
+              />
+            ),
+          },
+        ]}
+        form={editForm}
+        onClose={closeBulkUpdate}
+        onSubmit={handleBulkUpdate}
+        opened={bulkUpdateOpened}
+        submitLabel="Update Selected"
+        title={`Update ${selectedIds.length} Actual Expense Entr${selectedIds.length === 1 ? 'y' : 'ies'}`}
       />
     </>
   );

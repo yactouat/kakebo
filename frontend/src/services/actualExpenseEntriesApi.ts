@@ -71,6 +71,44 @@ export const actualExpenseEntriesApi = {
     return result.data;
   },
 
+  async bulkDelete(entryIds: number[]): Promise<{ deleted_count: number }> {
+    const response = await fetch(`${API_BASE_URL}/bulk`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ entry_ids: entryIds }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+      throw new Error(errorData.detail || `Failed to delete actual expense entries: ${response.statusText}`);
+    }
+    const result: APIResponse<{ deleted_count: number }> = await response.json();
+    if (!result.data) {
+      throw new Error('No data returned from API');
+    }
+    return result.data;
+  },
+
+  async bulkUpdate(entryIds: number[], update: ActualExpenseEntryUpdate): Promise<{ updated_count: number }> {
+    const response = await fetch(`${API_BASE_URL}/bulk`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ entry_ids: entryIds, update }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+      throw new Error(errorData.detail || `Failed to update actual expense entries: ${response.statusText}`);
+    }
+    const result: APIResponse<{ updated_count: number }> = await response.json();
+    if (!result.data) {
+      throw new Error('No data returned from API');
+    }
+    return result.data;
+  },
+
   async delete(id: number): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/${id}`, {
       method: 'DELETE',

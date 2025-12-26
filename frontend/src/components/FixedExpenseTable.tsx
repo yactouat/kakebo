@@ -1,5 +1,5 @@
 import { Button, Group, NumberInput, Select, TextInput } from '@mantine/core';
-import { IconCopy, IconPlus } from '@tabler/icons-react';
+import { IconCopy, IconPlus, IconTrash } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { useState } from 'react';
 
@@ -39,6 +39,8 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
   };
 
   const {
+    bulkUpdateOpened,
+    closeBulkUpdate,
     closeCreate,
     closeEdit,
     createForm,
@@ -47,12 +49,17 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
     editForm,
     editOpened,
     fetchEntries,
+    handleBulkDelete,
+    handleBulkUpdate,
     handleCreate,
     handleDelete,
     handleEdit,
     handleUpdate,
     loading,
+    openBulkUpdate,
     openCreate,
+    selectedIds,
+    setSelectedIds,
     totalShown,
   } = useEntryTable<FixedExpenseEntry, FixedExpenseEntryCreate, FixedExpenseEntryUpdate>({
     api: fixedExpenseEntriesApi,
@@ -266,8 +273,36 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
               onClick={handleCopyToNextMonth}
               variant="light"
             >
-              Copy to Next Month
+              Copy all to Next Month
             </Button>
+          )}
+          {selectedIds.length > 0 && (
+            <>
+              <Button
+                leftSection={<IconTrash size={16} />}
+                color="red"
+                onClick={handleBulkDelete}
+                variant="light"
+              >
+                Delete Selected ({selectedIds.length})
+              </Button>
+              <Button
+                onClick={() => {
+                  // Initialize bulk update form with empty values
+                  editForm.setValues({
+                    amount: undefined,
+                    item: undefined,
+                    currency: undefined,
+                    month: undefined,
+                    year: undefined,
+                  });
+                  openBulkUpdate();
+                }}
+                variant="light"
+              >
+                Update Selected ({selectedIds.length})
+              </Button>
+            </>
           )}
         </Group>
       </Group>
@@ -279,6 +314,8 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
         loading={loading}
         onDelete={handleDelete}
         onEdit={handleEdit}
+        onSelectionChange={setSelectedIds}
+        selectedIds={selectedIds}
         totalShown={totalShown}
       />
 
@@ -300,6 +337,16 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
         opened={editOpened}
         submitLabel="Update"
         title="Edit Fixed Expense Entry"
+      />
+
+      <EntryModal
+        fields={editFields}
+        form={editForm}
+        onClose={closeBulkUpdate}
+        onSubmit={handleBulkUpdate}
+        opened={bulkUpdateOpened}
+        submitLabel="Update Selected"
+        title={`Update ${selectedIds.length} Fixed Expense Entr${selectedIds.length === 1 ? 'y' : 'ies'}`}
       />
     </>
   );

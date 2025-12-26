@@ -7,6 +7,8 @@ import { monthToYYYYMM } from '../utils/months';
 import { useAppStore } from '../stores/useAppStore';
 
 export interface EntryApi<TEntry, TCreate, TUpdate> {
+  bulkDelete?: (entryIds: number[]) => Promise<{ deleted_count: number }>;
+  bulkUpdate?: (entryIds: number[], update: TUpdate) => Promise<{ updated_count: number }>;
   create: (entry: TCreate) => Promise<TEntry>;
   delete: (id: number) => Promise<void>;
   getAll: (month: string) => Promise<TEntry[]>;
@@ -38,11 +40,13 @@ export function useEntryTable<TEntry extends { id: number; amount: number }, TCr
   createValidation,
   updateValidation,
 }: UseEntryTableConfig<TEntry, TCreate, TUpdate>) {
+  const [bulkUpdateOpened, { open: openBulkUpdate, close: closeBulkUpdate }] = useDisclosure(false);
   const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
   const [editOpened, { open: openEdit, close: closeEdit }] = useDisclosure(false);
   const [editingEntry, setEditingEntry] = useState<TEntry | null>(null);
   const [data, setData] = useState<TEntry[]>(initialData || []);
   const [loading, setLoading] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const { notifyDataChange, selectedMonth, selectedYear } = useAppStore();
 
   const createForm = useForm<TCreate>({
@@ -134,6 +138,88 @@ export function useEntryTable<TEntry extends { id: number; amount: number }, TCr
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) {
+      notifications.show({
+        title: 'Error',
+        message: 'No entries selected',
+        color: 'red',
+      });
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete ${selectedIds.length} ${entityName}${selectedIds.length === 1 ? '' : 's'}?`)) {
+      return;
+    }
+
+    if (!api.bulkDelete) {
+      notifications.show({
+        title: 'Error',
+        message: 'Bulk delete is not supported for this entity',
+        color: 'red',
+      });
+      return;
+    }
+
+    try {
+      await api.bulkDelete(selectedIds);
+      setSelectedIds([]);
+      await fetchEntries();
+      notifyDataChange();
+      notifications.show({
+        title: 'Success',
+        message: `Successfully deleted ${selectedIds.length} ${entityName}${selectedIds.length === 1 ? '' : 's'}`,
+        color: 'green',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: error instanceof Error ? error.message : `Failed to delete ${entityName}s`,
+        color: 'red',
+      });
+    }
+  };
+
+  const handleBulkUpdate = async (values: TUpdate) => {
+    if (selectedIds.length === 0) {
+      notifications.show({
+        title: 'Error',
+        message: 'No entries selected',
+        color: 'red',
+      });
+      return;
+    }
+
+    if (!api.bulkUpdate) {
+      notifications.show({
+        title: 'Error',
+        message: 'Bulk update is not supported for this entity',
+        color: 'red',
+      });
+      return;
+    }
+
+    try {
+      const updateData = prepareUpdateData(values, {} as TEntry);
+      const result = await api.bulkUpdate(selectedIds, updateData);
+      setSelectedIds([]);
+      closeBulkUpdate();
+      await fetchEntries();
+      notifyDataChange();
+      notifications.show({
+        title: 'Success',
+        message: `Successfully updated ${result.updated_count} ${entityName}${result.updated_count === 1 ? '' : 's'}`,
+        color: 'green',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: error instanceof Error ? error.message : `Failed to update ${entityName}s`,
+        color: 'red',
+      });
+    }
+  };
+
   const handleDelete = async (id: number) => {
     if (!confirm(`Are you sure you want to delete this ${entityName}?`)) {
       return;
@@ -167,11 +253,16 @@ export function useEntryTable<TEntry extends { id: number; amount: number }, TCr
     // State
     data: sortedData,
     loading,
+    selectedIds,
+    setSelectedIds,
     totalShown,
     
     // Modal state
+    bulkUpdateOpened,
+    closeBulkUpdate,
     createOpened,
     editOpened,
+    openBulkUpdate,
     openCreate,
     closeCreate,
     openEdit,
@@ -182,6 +273,8 @@ export function useEntryTable<TEntry extends { id: number; amount: number }, TCr
     editForm,
     
     // Handlers
+    handleBulkDelete,
+    handleBulkUpdate,
     handleCreate,
     handleEdit,
     handleUpdate,

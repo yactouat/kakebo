@@ -8,6 +8,61 @@ from exceptions import ValidationError
 from validators.month_validator import validate_month_format
 
 
+def bulk_delete_fixed_expense_entries(entry_ids: List[int]) -> int:
+    """Delete multiple fixed expense entries by IDs. Returns the number of deleted entries."""
+    if not entry_ids:
+        return 0
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    placeholders = ','.join('?' * len(entry_ids))
+    cursor.execute(f"DELETE FROM fixed_expense_entries WHERE id IN ({placeholders})", entry_ids)
+    deleted_count = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return deleted_count
+
+
+def bulk_update_fixed_expense_entries(entry_ids: List[int], entry_update: FixedExpenseEntryUpdate) -> int:
+    """Update multiple fixed expense entries with the same update data. Returns the number of updated entries."""
+    if not entry_ids:
+        return 0
+    
+    # Get all existing entries to fill in missing fields
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    placeholders = ','.join('?' * len(entry_ids))
+    cursor.execute(f"SELECT id, amount, item, currency, month, year FROM fixed_expense_entries WHERE id IN ({placeholders})", entry_ids)
+    existing_entries = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    
+    if not existing_entries:
+        return 0
+    
+    # Prepare update values - use provided values or keep existing ones
+    # For bulk update, we'll use the first entry's existing values as defaults
+    first_existing = existing_entries[0]
+    amount = entry_update.amount if entry_update.amount is not None else first_existing["amount"]
+    item = entry_update.item if entry_update.item is not None else first_existing["item"]
+    existing_currency = first_existing.get("currency", "EUR")
+    currency = entry_update.currency if entry_update.currency is not None else existing_currency
+    month = entry_update.month if entry_update.month is not None else first_existing.get("month", datetime.now().month)
+    year = entry_update.year if entry_update.year is not None else first_existing.get("year", datetime.now().year)
+    
+    # Update all entries
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        f"UPDATE fixed_expense_entries SET amount = ?, item = ?, currency = ?, month = ?, year = ? WHERE id IN ({placeholders})",
+        (amount, item, currency, month, year, *entry_ids)
+    )
+    updated_count = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return updated_count
+
+
 def copy_fixed_expense_entries_to_next_month() -> int:
     """Copy all fixed expense entries from current month to next month.
     
@@ -188,4 +243,3 @@ def update_fixed_expense_entry(entry_id: int, entry_update: FixedExpenseEntryUpd
     if updated:
         return {"id": entry_id, "amount": amount, "item": item, "currency": currency, "month": month, "year": year}
     return None
-

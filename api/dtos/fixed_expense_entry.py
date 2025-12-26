@@ -50,3 +50,12 @@ class FixedExpenseEntryUpdate(BaseModel):
     validate_no_null_values = create_no_null_validator(
         ["amount", "item", "currency", "month", "year"]
     )
+
+
+class BulkFixedExpenseEntryDeleteRequest(BaseModel):
+    entry_ids: list[int]
+
+
+class BulkFixedExpenseEntryUpdateRequest(BaseModel):
+    entry_ids: list[int]
+    update: FixedExpenseEntryUpdate

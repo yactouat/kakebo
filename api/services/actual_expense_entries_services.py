@@ -7,6 +7,61 @@ from exceptions import ValidationError
 from validators.month_validator import validate_month_format
 
 
+def bulk_delete_actual_expense_entries(entry_ids: List[int]) -> int:
+    """Delete multiple actual expense entries by IDs. Returns the number of deleted entries."""
+    if not entry_ids:
+        return 0
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    placeholders = ','.join('?' * len(entry_ids))
+    cursor.execute(f"DELETE FROM actual_expense_entries WHERE id IN ({placeholders})", entry_ids)
+    deleted_count = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return deleted_count
+
+
+def bulk_update_actual_expense_entries(entry_ids: List[int], entry_update: ActualExpenseEntryUpdate) -> int:
+    """Update multiple actual expense entries with the same update data. Returns the number of updated entries."""
+    if not entry_ids:
+        return 0
+    
+    # Get all existing entries to fill in missing fields
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    placeholders = ','.join('?' * len(entry_ids))
+    cursor.execute(f"SELECT id, amount, date, item, category, currency FROM actual_expense_entries WHERE id IN ({placeholders})", entry_ids)
+    existing_entries = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    
+    if not existing_entries:
+        return 0
+    
+    # Prepare update values - use provided values or keep existing ones
+    # For bulk update, we'll use the first entry's existing values as defaults
+    first_existing = existing_entries[0]
+    amount = entry_update.amount if entry_update.amount is not None else first_existing["amount"]
+    date = entry_update.date if entry_update.date is not None else first_existing["date"]
+    item = entry_update.item if entry_update.item is not None else first_existing["item"]
+    category = entry_update.category.value if entry_update.category is not None else first_existing["category"]
+    existing_currency = first_existing.get("currency", "EUR")
+    currency = entry_update.currency if entry_update.currency is not None else existing_currency
+    
+    # Update all entries
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        f"UPDATE actual_expense_entries SET amount = ?, date = ?, item = ?, category = ?, currency = ? WHERE id IN ({placeholders})",
+        (amount, date, item, category, currency, *entry_ids)
+    )
+    updated_count = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return updated_count
+
+
 def create_actual_expense_entry(entry: ActualExpenseEntryCreate) -> Dict[str, Any]:
     """Create a new actual expense entry and return it with its ID.
     
@@ -36,6 +91,17 @@ def create_actual_expense_entry(entry: ActualExpenseEntryCreate) -> Dict[str, An
         "category": entry.category.value,
         "currency": currency
     }
+
+
+def delete_actual_expense_entry(entry_id: int) -> bool:
+    """Delete an actual expense entry by ID. Returns True if deleted, False if not found."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM actual_expense_entries WHERE id = ?", (entry_id,))
+    deleted = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return deleted
 
 
 def get_all_actual_expense_entries_by_month(month: str) -> List[Dict[str, Any]]:
@@ -129,15 +195,3 @@ def update_actual_expense_entry(entry_id: int, entry_update: ActualExpenseEntryU
             "currency": currency
         }
     return None
-
-
-def delete_actual_expense_entry(entry_id: int) -> bool:
-    """Delete an actual expense entry by ID. Returns True if deleted, False if not found."""
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM actual_expense_entries WHERE id = ?", (entry_id,))
-    deleted = cursor.rowcount > 0
-    conn.commit()
-    conn.close()
-    return deleted
-
