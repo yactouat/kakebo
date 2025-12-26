@@ -176,3 +176,52 @@ def update_income_entry(entry_id: int, entry_update: IncomeEntryUpdate, existing
     if updated:
         return {"id": entry_id, "amount": amount, "date": date, "item": item, "currency": currency}
     return None
+
+
+def merge_income_entries(entry_ids: List[int]) -> Dict[str, Any]:
+    """Merge multiple income entries into one.
+    
+    Merges entries by:
+    - Summing amounts
+    - Combining items (comma-separated)
+    - Using earliest date
+    - Using first entry's currency
+    
+    Args:
+        entry_ids: List of entry IDs to merge (must have at least 2)
+    
+    Returns:
+        The merged entry with its new ID
+    
+    Raises:
+        ValidationError: If less than 2 entries provided or entries not found
+    """
+    if len(entry_ids) < 2:
+        raise ValidationError("At least 2 entries are required to merge")
+    
+    # Get all entries to merge
+    entries = []
+    for entry_id in entry_ids:
+        entry = get_income_entry_by_id(entry_id)
+        if entry is None:
+            raise ValidationError(f"Income entry with id {entry_id} not found")
+        entries.append(entry)
+    
+    # Calculate merged values
+    merged_amount = sum(entry["amount"] for entry in entries)
+    merged_items = ", ".join(entry["item"] for entry in entries if entry.get("item"))
+    merged_date = min(entry["date"] for entry in entries)
+    merged_currency = entries[0].get("currency", "EUR")
+    
+    # Create merged entry
+    merged_entry = create_income_entry(IncomeEntryCreate(
+        amount=merged_amount,
+        date=merged_date,
+        item=merged_items,
+        currency=merged_currency
+    ))
+    
+    # Delete original entries
+    bulk_delete_income_entries(entry_ids)
+    
+    return merged_entry

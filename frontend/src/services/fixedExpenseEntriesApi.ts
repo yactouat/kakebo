@@ -138,5 +138,28 @@ export const fixedExpenseEntriesApi = {
     }
     return result.data;
   },
+
+  async merge(entryIds: number[]): Promise<FixedExpenseEntry> {
+    if (entryIds.length < 2) {
+      throw new Error('At least 2 entries are required to merge');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/merge`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ entry_ids: entryIds }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+      throw new Error(errorData.detail || `Failed to merge fixed expense entries: ${response.statusText}`);
+    }
+    const result: APIResponse<FixedExpenseEntry> = await response.json();
+    if (!result.data) {
+      throw new Error('No data returned from API');
+    }
+    return result.data;
+  },
 };
 

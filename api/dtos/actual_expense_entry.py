@@ -51,3 +51,7 @@ class BulkActualExpenseEntryUpdateRequest(BaseModel):
     entry_ids: list[int]
     update: ActualExpenseEntryUpdate
 
+
+class BulkActualExpenseEntryMergeRequest(BaseModel):
+    entry_ids: list[int]
+

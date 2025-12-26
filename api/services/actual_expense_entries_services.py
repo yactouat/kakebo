@@ -195,3 +195,62 @@ def update_actual_expense_entry(entry_id: int, entry_update: ActualExpenseEntryU
             "currency": currency
         }
     return None
+
+
+def merge_actual_expense_entries(entry_ids: List[int]) -> Dict[str, Any]:
+    """Merge multiple actual expense entries into one.
+    
+    Merges entries by:
+    - Summing amounts
+    - Combining items (comma-separated)
+    - Using earliest date
+    - Using first entry's category
+    - Using first entry's currency
+    
+    Args:
+        entry_ids: List of entry IDs to merge (must have at least 2)
+    
+    Returns:
+        The merged entry with its new ID
+    
+    Raises:
+        ValidationError: If less than 2 entries provided or entries not found
+    """
+    if len(entry_ids) < 2:
+        raise ValidationError("At least 2 entries are required to merge")
+    
+    # Get all entries to merge
+    entries = []
+    for entry_id in entry_ids:
+        entry = get_actual_expense_entry_by_id(entry_id)
+        if entry is None:
+            raise ValidationError(f"Actual expense entry with id {entry_id} not found")
+        entries.append(entry)
+    
+    # Calculate merged values
+    merged_amount = sum(entry["amount"] for entry in entries)
+    merged_items = ", ".join(entry["item"] for entry in entries if entry.get("item"))
+    merged_date = min(entry["date"] for entry in entries)
+    merged_currency = entries[0].get("currency", "EUR")
+    # Use first entry's category (stored as string in DB)
+    from dtos.actual_expense_entry import ExpenseCategory
+    merged_category_str = entries[0].get("category", "essential")
+    # Convert string to enum
+    try:
+        merged_category = ExpenseCategory(merged_category_str)
+    except ValueError:
+        merged_category = ExpenseCategory.ESSENTIAL
+    
+    # Create merged entry
+    merged_entry = create_actual_expense_entry(ActualExpenseEntryCreate(
+        amount=merged_amount,
+        date=merged_date,
+        item=merged_items,
+        category=merged_category,
+        currency=merged_currency
+    ))
+    
+    # Delete original entries
+    bulk_delete_actual_expense_entries(entry_ids)
+    
+    return merged_entry

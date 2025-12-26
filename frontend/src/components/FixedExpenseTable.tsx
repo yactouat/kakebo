@@ -1,5 +1,5 @@
 import { Button, Group, NumberInput, Select, TextInput } from '@mantine/core';
-import { IconCopy, IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconCopy, IconPlus, IconTrash, IconArrowsJoin } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { useState } from 'react';
 
@@ -50,6 +50,7 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
     editOpened,
     fetchEntries,
     handleBulkDelete,
+    handleBulkMerge,
     handleBulkUpdate,
     handleCreate,
     handleDelete,
@@ -278,6 +279,16 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
           )}
           {selectedIds.length > 0 && (
             <>
+              {selectedIds.length >= 2 && (
+                <Button
+                  leftSection={<IconArrowsJoin size={16} />}
+                  color="blue"
+                  onClick={handleBulkMerge}
+                  variant="light"
+                >
+                  Merge Selected ({selectedIds.length})
+                </Button>
+              )}
               <Button
                 leftSection={<IconTrash size={16} />}
                 color="red"

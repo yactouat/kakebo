@@ -243,3 +243,55 @@ def update_fixed_expense_entry(entry_id: int, entry_update: FixedExpenseEntryUpd
     if updated:
         return {"id": entry_id, "amount": amount, "item": item, "currency": currency, "month": month, "year": year}
     return None
+
+
+def merge_fixed_expense_entries(entry_ids: List[int]) -> Dict[str, Any]:
+    """Merge multiple fixed expense entries into one.
+    
+    Merges entries by:
+    - Summing amounts
+    - Combining items (comma-separated)
+    - Using first entry's month/year
+    - Using first entry's currency
+    
+    Args:
+        entry_ids: List of entry IDs to merge (must have at least 2)
+    
+    Returns:
+        The merged entry with its new ID
+    
+    Raises:
+        ValidationError: If less than 2 entries provided or entries not found
+    """
+    if len(entry_ids) < 2:
+        raise ValidationError("At least 2 entries are required to merge")
+    
+    # Get all entries to merge
+    entries = []
+    for entry_id in entry_ids:
+        entry = get_fixed_expense_entry_by_id(entry_id)
+        if entry is None:
+            raise ValidationError(f"Fixed expense entry with id {entry_id} not found")
+        entries.append(entry)
+    
+    # Calculate merged values
+    merged_amount = sum(entry["amount"] for entry in entries)
+    merged_items = ", ".join(entry["item"] for entry in entries if entry.get("item"))
+    merged_currency = entries[0].get("currency", "EUR")
+    # Use first entry's month/year
+    merged_month = entries[0].get("month", datetime.now().month)
+    merged_year = entries[0].get("year", datetime.now().year)
+    
+    # Create merged entry
+    merged_entry = create_fixed_expense_entry(FixedExpenseEntryCreate(
+        amount=merged_amount,
+        item=merged_items,
+        currency=merged_currency,
+        month=merged_month,
+        year=merged_year
+    ))
+    
+    # Delete original entries
+    bulk_delete_fixed_expense_entries(entry_ids)
+    
+    return merged_entry

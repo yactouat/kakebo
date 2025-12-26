@@ -37,3 +37,7 @@ class BulkIncomeEntryUpdateRequest(BaseModel):
     entry_ids: list[int]
     update: IncomeEntryUpdate
 
+
+class BulkIncomeEntryMergeRequest(BaseModel):
+    entry_ids: list[int]
+

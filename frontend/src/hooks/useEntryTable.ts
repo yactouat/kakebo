@@ -12,6 +12,7 @@ export interface EntryApi<TEntry, TCreate, TUpdate> {
   create: (entry: TCreate) => Promise<TEntry>;
   delete: (id: number) => Promise<void>;
   getAll: (month: string) => Promise<TEntry[]>;
+  merge?: (entryIds: number[]) => Promise<TEntry>;
   update: (id: number, entry: TUpdate) => Promise<TEntry>;
 }
 
@@ -220,6 +221,48 @@ export function useEntryTable<TEntry extends { id: number; amount: number }, TCr
     }
   };
 
+  const handleBulkMerge = async () => {
+    if (selectedIds.length < 2) {
+      notifications.show({
+        title: 'Error',
+        message: 'Please select at least 2 entries to merge',
+        color: 'red',
+      });
+      return;
+    }
+
+    if (!api.merge) {
+      notifications.show({
+        title: 'Error',
+        message: 'Merge is not supported for this entity',
+        color: 'red',
+      });
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to merge ${selectedIds.length} ${entityName}${selectedIds.length === 1 ? '' : 's'} into one?`)) {
+      return;
+    }
+
+    try {
+      await api.merge(selectedIds);
+      setSelectedIds([]);
+      await fetchEntries();
+      notifyDataChange();
+      notifications.show({
+        title: 'Success',
+        message: `Successfully merged ${selectedIds.length} ${entityName}${selectedIds.length === 1 ? '' : 's'} into one`,
+        color: 'green',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: error instanceof Error ? error.message : `Failed to merge ${entityName}s`,
+        color: 'red',
+      });
+    }
+  };
+
   const handleDelete = async (id: number) => {
     if (!confirm(`Are you sure you want to delete this ${entityName}?`)) {
       return;
@@ -274,6 +317,7 @@ export function useEntryTable<TEntry extends { id: number; amount: number }, TCr
     
     // Handlers
     handleBulkDelete,
+    handleBulkMerge,
     handleBulkUpdate,
     handleCreate,
     handleEdit,

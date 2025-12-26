@@ -59,3 +59,7 @@ class BulkFixedExpenseEntryDeleteRequest(BaseModel):
 class BulkFixedExpenseEntryUpdateRequest(BaseModel):
     entry_ids: list[int]
     update: FixedExpenseEntryUpdate
+
+
+class BulkFixedExpenseEntryMergeRequest(BaseModel):
+    entry_ids: list[int]

@@ -7,6 +7,7 @@ from dtos.actual_expense_entry import (
     ActualExpenseEntryCreate,
     ActualExpenseEntryUpdate,
     BulkActualExpenseEntryDeleteRequest,
+    BulkActualExpenseEntryMergeRequest,
     BulkActualExpenseEntryUpdateRequest,
 )
 from exceptions import ValidationError
@@ -18,6 +19,7 @@ from services.actual_expense_entries_services import (
     delete_actual_expense_entry,
     get_all_actual_expense_entries_by_month,
     get_actual_expense_entry_by_id,
+    merge_actual_expense_entries,
     update_actual_expense_entry,
 )
 from services.balance_entry_services import update_balance_entry_for_month
@@ -184,6 +186,55 @@ async def bulk_update_entries(request: BulkActualExpenseEntryUpdateRequest):
         raise HTTPException(status_code=422, detail=f"Validation error: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update actual expense entries: {str(e)}")
+
+
+@router.post("/merge", response_model=APIResponse[ActualExpenseEntry])
+async def merge_entries(request: BulkActualExpenseEntryMergeRequest):
+    """Merge multiple actual expense entries into one.
+    
+    Merges entries by summing amounts, combining items, using earliest date,
+    first entry's category and currency. Original entries are deleted.
+    """
+    if not request.entry_ids or len(request.entry_ids) < 2:
+        raise HTTPException(status_code=400, detail="At least 2 entry IDs are required to merge")
+    
+    try:
+        # Get existing entries to check months before merge
+        existing_entries = []
+        for entry_id in request.entry_ids:
+            existing = get_actual_expense_entry_by_id(entry_id)
+            if existing:
+                existing_entries.append(existing)
+        
+        if not existing_entries:
+            raise HTTPException(status_code=404, detail="No entries found with provided IDs")
+        
+        # Perform merge
+        merged_entry = merge_actual_expense_entries(request.entry_ids)
+        
+        # Check if any were month -1 and update balance if needed
+        months_to_update = set()
+        for existing in existing_entries:
+            month = extract_month_from_date(existing["date"])
+            if month and is_previous_month(month):
+                months_to_update.add(month)
+        
+        # Also check the merged entry's month
+        merged_month = extract_month_from_date(merged_entry["date"])
+        if merged_month and is_previous_month(merged_month):
+            months_to_update.add(merged_month)
+        
+        for month in months_to_update:
+            update_balance_entry_for_month(month)
+        
+        return APIResponse(
+            data=ActualExpenseEntry(**merged_entry),
+            msg=f"Successfully merged {len(request.entry_ids)} actual expense entr{'y' if len(request.entry_ids) == 1 else 'ies'}"
+        )
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to merge actual expense entries: {str(e)}")
 
 
 @router.delete("/{entry_id}", response_model=APIResponse[dict])

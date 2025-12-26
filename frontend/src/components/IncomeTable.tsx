@@ -1,5 +1,5 @@
 import { Button, Group, NumberInput, TextInput } from '@mantine/core';
-import { IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconArrowsJoin } from '@tabler/icons-react';
 
 import { EntryModal, type FormField } from './shared/EntryModal';
 import { EntryTable, type TableColumn } from './shared/EntryTable';
@@ -30,6 +30,7 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
     editForm,
     editOpened,
     handleBulkDelete,
+    handleBulkMerge,
     handleBulkUpdate,
     handleCreate,
     handleDelete,
@@ -189,6 +190,16 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
           </Button>
           {selectedIds.length > 0 && (
             <>
+              {selectedIds.length >= 2 && (
+                <Button
+                  leftSection={<IconArrowsJoin size={16} />}
+                  color="blue"
+                  onClick={handleBulkMerge}
+                  variant="light"
+                >
+                  Merge Selected ({selectedIds.length})
+                </Button>
+              )}
               <Button
                 leftSection={<IconTrash size={16} />}
                 color="red"
