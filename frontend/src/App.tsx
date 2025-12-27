@@ -18,6 +18,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import DiagramsPage from './pages/DiagramsPage';
 import LedgerPage from './pages/LedgerPage';
+import NetWorthPage from './pages/NetWorthPage';
 
 const App = () => {
   return (
@@ -28,6 +29,7 @@ const App = () => {
           <Route element={<Navigate to="/ledger" replace />} path="/" />
           <Route element={<DiagramsPage />} path="/diagrams" />
           <Route element={<LedgerPage />} path="/ledger" />
+          <Route element={<NetWorthPage />} path="/net-worth" />
         </Routes>
       </Layout>
     </MantineProvider>

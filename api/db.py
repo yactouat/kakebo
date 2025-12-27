@@ -89,6 +89,21 @@ def init_db():
         )
     """)
     
+    # Create debt_entries table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS debt_entries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            initial_amount REAL NOT NULL,
+            current_balance REAL NOT NULL,
+            currency TEXT NOT NULL DEFAULT 'EUR',
+            linked_fixed_expense_id INTEGER,
+            notes TEXT,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            FOREIGN KEY (linked_fixed_expense_id) REFERENCES fixed_expense_entries(id) ON DELETE SET NULL
+        )
+    """)
+    
     conn.commit()
     conn.close()
     print(f"Database initialized: {DB_PATH}")

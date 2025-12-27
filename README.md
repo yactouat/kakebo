@@ -37,6 +37,25 @@ Frontend runs at `http://localhost:5173`
 
 To run the entire stack as a systemd service on Ubuntu 24, always available at `http://kakebo.local`, see the [Local Service Setup Guide](docs/local-service-setup.md).
 
+### Quick Redeploy
+
+After making changes to the code, redeploy the application:
+
+**Redeploy everything:**
+```bash
+# Backend
+cd /home/yactouat/kakebo/api && source venv/bin/activate && pip install -r requirements.txt && sudo systemctl restart kakebo-api.service
+
+# Frontend
+cd /home/yactouat/kakebo/frontend && yarn build && sudo systemctl restart kakebo-frontend.service
+```
+
+**Check service status:**
+```bash
+sudo systemctl status kakebo-api.service
+sudo systemctl status kakebo-frontend.service
+```
+
 ## Contributing
 
 Contributions are welcome! Whether you're fixing bugs, adding features, or improving documentation, your help is appreciated.
