@@ -71,6 +71,15 @@ const AvailableCash = () => {
     return null;
   }
 
+  // Check if selected month and year match current month and year
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth() + 1;
+  const currentYear = currentDate.getFullYear();
+  
+  if (selectedMonth !== currentMonth || selectedYear !== currentYear) {
+    return null;
+  }
+
   const monthName = getMonthName(selectedMonth);
 
   return (
