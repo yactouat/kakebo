@@ -24,6 +24,25 @@ export const fixedExpenseEntriesApi = {
     return result.data;
   },
 
+  async copySelectedToNextMonth(entryIds: number[]): Promise<{ copied_count: number }> {
+    const response = await fetch(`${API_BASE_URL}/copy-selected-to-next-month`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ entry_ids: entryIds }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+      throw new Error(errorData.detail || `Failed to copy fixed expense entries: ${response.statusText}`);
+    }
+    const result: APIResponse<{ copied_count: number }> = await response.json();
+    if (!result.data) {
+      throw new Error('No data returned from API');
+    }
+    return result.data;
+  },
+
   async create(entry: FixedExpenseEntryCreate): Promise<FixedExpenseEntry> {
     const response = await fetch(API_BASE_URL, {
       method: 'POST',

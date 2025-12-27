@@ -134,6 +134,38 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
     }
   };
 
+  const handleCopySelectedToNextMonth = async () => {
+    if (selectedIds.length === 0) {
+      notifications.show({
+        title: 'Error',
+        message: 'Please select at least one entry to copy',
+        color: 'red',
+      });
+      return;
+    }
+
+    setCopyLoading(true);
+    try {
+      const result = await fixedExpenseEntriesApi.copySelectedToNextMonth(selectedIds);
+      await fetchEntries();
+      notifyDataChange();
+      setSelectedIds([]);
+      notifications.show({
+        title: 'Success',
+        message: `Successfully copied ${result.copied_count} fixed expense entr${result.copied_count === 1 ? 'y' : 'ies'} to next month`,
+        color: 'green',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: error instanceof Error ? error.message : 'Failed to copy fixed expense entries',
+        color: 'red',
+      });
+    } finally {
+      setCopyLoading(false);
+    }
+  };
+
   // Sort functionality
   const getValue = (entry: FixedExpenseEntry, column: string): any => {
     switch (column) {
@@ -310,6 +342,15 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
           )}
           {selectedIds.length > 0 && (
             <>
+              <Button
+                leftSection={<IconCopy size={16} />}
+                color="blue"
+                onClick={handleCopySelectedToNextMonth}
+                loading={copyLoading}
+                variant="light"
+              >
+                Copy Selected to Next Month ({selectedIds.length})
+              </Button>
               {selectedIds.length >= 2 && (
                 <Button
                   leftSection={<IconArrowsJoin size={16} />}

@@ -17,6 +17,7 @@ from services.fixed_expense_entries_services import (
     bulk_delete_fixed_expense_entries,
     bulk_update_fixed_expense_entries,
     copy_fixed_expense_entries_to_next_month,
+    copy_selected_fixed_expense_entries_to_next_month,
     create_fixed_expense_entry,
     delete_fixed_expense_entry,
     get_all_fixed_expense_entries_by_month,
@@ -65,6 +66,28 @@ async def copy_entries_to_next_month():
     """
     try:
         copied_count = copy_fixed_expense_entries_to_next_month()
+        return APIResponse(
+            data={"copied_count": copied_count},
+            msg=f"Successfully copied {copied_count} fixed expense entr{'y' if copied_count == 1 else 'ies'} to next month"
+        )
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to copy fixed expense entries: {str(e)}")
+
+
+@router.post("/copy-selected-to-next-month", response_model=APIResponse[dict])
+async def copy_selected_entries_to_next_month(request: BulkFixedExpenseEntryDeleteRequest):
+    """Copy selected fixed expense entries to their respective next months.
+    
+    For each selected entry, calculates the next month/year based on the entry's
+    current month/year and creates a copy in that next month.
+    """
+    if not request.entry_ids:
+        raise HTTPException(status_code=400, detail="No entry IDs provided")
+    
+    try:
+        copied_count = copy_selected_fixed_expense_entries_to_next_month(request.entry_ids)
         return APIResponse(
             data={"copied_count": copied_count},
             msg=f"Successfully copied {copied_count} fixed expense entr{'y' if copied_count == 1 else 'ies'} to next month"

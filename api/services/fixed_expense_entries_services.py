@@ -110,6 +110,64 @@ def copy_fixed_expense_entries_to_next_month() -> int:
     return copied_count
 
 
+def copy_selected_fixed_expense_entries_to_next_month(entry_ids: List[int]) -> int:
+    """Copy selected fixed expense entries to their respective next months.
+    
+    For each entry, calculates the next month/year based on the entry's current month/year
+    and creates a copy in that next month.
+    
+    Args:
+        entry_ids: List of entry IDs to copy
+    
+    Returns:
+        Number of entries copied
+    
+    Raises:
+        ValidationError: If no entries found or if validation fails
+    """
+    if not entry_ids:
+        raise ValidationError("No entry IDs provided")
+    
+    # Get all entries to copy
+    entries = []
+    for entry_id in entry_ids:
+        entry = get_fixed_expense_entry_by_id(entry_id)
+        if entry is None:
+            raise ValidationError(f"Fixed expense entry with id {entry_id} not found")
+        entries.append(entry)
+    
+    if not entries:
+        raise ValidationError("No entries found with provided IDs")
+    
+    # Copy each entry to its next month
+    conn = get_connection()
+    cursor = conn.cursor()
+    copied_count = 0
+    
+    for entry in entries:
+        month = entry.get('month', datetime.now().month)
+        year = entry.get('year', datetime.now().year)
+        
+        # Calculate next month and year (handle year rollover)
+        if month == 12:
+            next_month = 1
+            next_year = year + 1
+        else:
+            next_month = month + 1
+            next_year = year
+        
+        cursor.execute(
+            "INSERT INTO fixed_expense_entries (amount, item, currency, month, year) VALUES (?, ?, ?, ?, ?)",
+            (entry['amount'], entry['item'], entry.get('currency', 'EUR'), next_month, next_year)
+        )
+        copied_count += 1
+    
+    conn.commit()
+    conn.close()
+    
+    return copied_count
+
+
 def create_fixed_expense_entry(entry: FixedExpenseEntryCreate) -> Dict[str, Any]:
     """Create a new fixed expense entry and return it with its ID.
     
