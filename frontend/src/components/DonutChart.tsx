@@ -1,4 +1,4 @@
-import { Text, Loader, Center, Paper, Button, Group } from '@mantine/core';
+import { Text, Loader, Center, Button, Group } from '@mantine/core';
 import { DonutChart as MantineDonutChart } from '@mantine/charts';
 import { useEffect, useState, useRef } from 'react';
 import { useAppStore } from '../stores/useAppStore';

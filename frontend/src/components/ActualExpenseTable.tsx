@@ -61,7 +61,6 @@ const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initi
     openCreate,
     selectedIds,
     setSelectedIds,
-    totalShown,
   } = useEntryTable<ActualExpenseEntry, ActualExpenseEntryCreate, ActualExpenseEntryUpdate>({
     api: actualExpenseEntriesApi,
     createValidation: {

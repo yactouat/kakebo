@@ -1,6 +1,5 @@
 import { IconEdit, IconTrash, IconChevronUp, IconChevronDown, IconArrowsUpDown } from '@tabler/icons-react';
 import { Table, Group, ActionIcon, Checkbox } from '@mantine/core';
-import { useState } from 'react';
 
 import { formatCurrency } from '../../utils/currency';
 import type { SortState } from '../../hooks/useTableSort';

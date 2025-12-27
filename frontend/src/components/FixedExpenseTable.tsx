@@ -63,7 +63,6 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
     openCreate,
     selectedIds,
     setSelectedIds,
-    totalShown,
   } = useEntryTable<FixedExpenseEntry, FixedExpenseEntryCreate, FixedExpenseEntryUpdate>({
     api: fixedExpenseEntriesApi,
     createValidation: {

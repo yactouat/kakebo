@@ -31,6 +31,12 @@ yarn install
 yarn dev
 ```
 
+Frontend runs at `http://localhost:5173`
+
+## Running as a Service on Ubuntu
+
+To run the entire stack as a systemd service on Ubuntu 24, always available at `http://kakebo.local`, see the [Local Service Setup Guide](docs/local-service-setup.md).
+
 ## Contributing
 
 Contributions are welcome! Whether you're fixing bugs, adding features, or improving documentation, your help is appreciated.

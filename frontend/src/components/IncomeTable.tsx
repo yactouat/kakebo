@@ -44,7 +44,6 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
     openCreate,
     selectedIds,
     setSelectedIds,
-    totalShown,
   } = useEntryTable<IncomeEntry, IncomeEntryCreate, IncomeEntryUpdate>({
     api: incomeEntriesApi,
     createValidation: {
