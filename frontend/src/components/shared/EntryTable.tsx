@@ -11,7 +11,7 @@ export interface TableColumn<T> {
   sortable?: boolean;
 }
 
-interface EntryTableProps<T extends { id: number; amount: number; currency?: string }> {
+interface EntryTableProps<T extends { id: number }> {
   columns: TableColumn<T>[];
   data: T[];
   emptyMessage: string;
@@ -25,7 +25,7 @@ interface EntryTableProps<T extends { id: number; amount: number; currency?: str
   totalShown: number;
 }
 
-export function EntryTable<T extends { id: number; amount: number; currency?: string }>({
+export function EntryTable<T extends { id: number }>({
   columns,
   data,
   emptyMessage,

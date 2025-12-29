@@ -248,12 +248,17 @@ const DebtTable = ({ debts: initialDebts, totalShown: initialTotalShown }: DebtT
       render: (debt) => {
         const progress = debt.initial_amount > 0 ? ((debt.initial_amount - debt.current_balance) / debt.initial_amount) * 100 : 0;
         return (
-          <Progress
-            value={progress}
-            color={progress === 100 ? 'green' : 'blue'}
-            size="sm"
-            label={`${progress.toFixed(1)}%`}
-          />
+          <Group gap="xs" align="center">
+            <Progress
+              value={progress}
+              color={progress === 100 ? 'green' : 'blue'}
+              size="sm"
+              style={{ flex: 1 }}
+            />
+            <span style={{ fontSize: '0.875rem', minWidth: '45px', textAlign: 'right' }}>
+              {progress.toFixed(1)}%
+            </span>
+          </Group>
         );
       },
       sortable: false,
