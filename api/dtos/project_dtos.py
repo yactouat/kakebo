@@ -1,12 +1,6 @@
 from pydantic import BaseModel, field_validator
+from validators.amount_validator import validate_amount
 from validators.no_null_validator import create_no_null_validator
-
-
-def validate_amount(v):
-    """Validates that amount is >= 0 if provided."""
-    if v is not None and v < 0:
-        raise ValueError("Amount must be >= 0")
-    return v
 
 
 def validate_priority(v):
