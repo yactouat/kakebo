@@ -132,6 +132,13 @@ The application includes an automated backup system that uploads the SQLite data
 - `dataChangeCounter` is incremented via `notifyDataChange()` to trigger component re-fetches after mutations
 - Used for coordinating updates across components (e.g., Available Cash recalculation)
 
+**For comprehensive documentation, see:** [Frontend State Management](docs/frontend-state-management.md)
+
+The application uses a hybrid approach:
+- **Global store (Zustand)**: Shared filters (`selectedMonth`/`selectedYear`), persisted UI state (`activeTab`), and coordination mechanism (`dataChangeCounter`/`notifyDataChange()`)
+- **Component-local state (useState)**: Data fetching, calculated values, UI state
+- **Data change pattern**: Call `notifyDataChange()` after mutations, listen to `dataChangeCounter` in `useEffect` dependencies for automatic re-renders
+
 ## Key File Locations
 
 **Backend:**
