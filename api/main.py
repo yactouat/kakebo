@@ -14,6 +14,7 @@ from routers import (
     fixed_expense_entries_router,
     income_entries_router,
     net_worth_router,
+    projects,
 )
 from schemas import APIResponse
 
@@ -74,3 +75,4 @@ app.include_router(debt_router.router)
 app.include_router(fixed_expense_entries_router.router)
 app.include_router(income_entries_router.router)
 app.include_router(net_worth_router.router)
+app.include_router(projects.router)
