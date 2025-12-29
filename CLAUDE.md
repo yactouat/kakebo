@@ -111,6 +111,8 @@ When modifying entries from a previous month, the system automatically:
 3. If negative: creates an unforeseen expense entry for current month
 4. This logic is in `/api/services/balance_entry_services.py`
 
+**For detailed documentation, see:** [Balance Carry-Forward System](docs/balance-carry-forward.md)
+
 ## State Management Details
 
 **Zustand store** (`/frontend/src/stores/useAppStore.ts`):

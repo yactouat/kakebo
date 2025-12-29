@@ -33,6 +33,11 @@ yarn dev
 
 Frontend runs at `http://localhost:5173`
 
+## Documentation
+
+- [Balance Carry-Forward System](docs/balance-carry-forward.md) - How the automatic monthly balance carry-forward works
+- [Local Service Setup Guide](docs/local-service-setup.md) - Running the application as a systemd service on Ubuntu
+
 ## Running as a Service on Ubuntu
 
 To run the entire stack as a systemd service on Ubuntu 24, always available at `http://kakebo.local`, see the [Local Service Setup Guide](docs/local-service-setup.md).
