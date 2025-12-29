@@ -1,5 +1,5 @@
 import { AppShell, Burger, Group, NavLink, Title } from '@mantine/core';
-import { IconChartBar, IconNotebook, IconWallet } from '@tabler/icons-react';
+import { IconBriefcase, IconChartBar, IconNotebook, IconWallet } from '@tabler/icons-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useDisclosure } from '@mantine/hooks';
 
@@ -44,6 +44,13 @@ const Layout = ({ children }: LayoutProps) => {
           label="Net Worth"
           leftSection={<IconWallet size={20} />}
           active={location.pathname === '/net-worth'}
+        />
+        <NavLink
+          component={Link}
+          to="/projects"
+          label="Projects"
+          leftSection={<IconBriefcase size={20} />}
+          active={location.pathname === '/projects'}
         />
         <NavLink
           component={Link}
