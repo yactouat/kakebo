@@ -162,3 +162,32 @@ The application uses a hybrid approach:
 ## Currency Handling
 
 Currency is stored per entry (not global) with EUR as default. No currency conversion logic is currently implemented.
+
+## Development Guidelines
+
+When working on this codebase, follow these guidelines:
+
+**Frontend:**
+- Ensure responsive design works on mobile, tablet, and desktop breakpoints using Mantine's Grid system
+- Follow accessibility best practices (proper labels, ARIA attributes, keyboard navigation)
+- Follow existing component organization: separate page components, form modals, and reusable components in appropriate directories
+- Implement proper loading states and error boundaries in React components
+- Use date-fns or native Date APIs for date formatting/manipulation in frontend
+- Use Mantine's built-in form validation hooks (useForm) for client-side validation
+- Use Zustand store's `dataChangeCounter` pattern for cross-component updates via `notifyDataChange()`
+- We are using Mantine, so check the docs if you are unsure on how to properly implement this
+
+**Backend:**
+- Follow existing database initialization pattern in `/api/db.py` for schema changes
+- Follow existing validation patterns using Pydantic models and custom validators in `/api/validators/`
+- Implement proper database indexes for performance where needed
+- Maintain consistency with existing router structure and service layer pattern (services return dicts, routers handle DTO conversion)
+- Maintain consistent error handling and response formats across all endpoints (ValueError → 400, ValidationError → 422, generic → 500)
+- Validation should occur at multiple layers: Pydantic DTOs, custom validators, and business logic in services
+- Use the standard `APIResponse<T>` wrapper format for all API responses
+- When running Python code, always use `venv`
+
+**Code Organization:**
+- In all files you work in, sort functions alphabetically
+- In Python, DO NOT import dependencies within functions to avoid circular imports, split logic into multiple files instead
+- Reuse current codebase patterns, if you see occasions of lifting reusable logic (whether backend API or frontend) please do so
