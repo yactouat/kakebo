@@ -10,6 +10,7 @@ from db import init_db
 from routers import (
     actual_expense_entries_router,
     available_cash_router,
+    contributions,
     debt_router,
     fixed_expense_entries_router,
     income_entries_router,
@@ -71,6 +72,7 @@ async def root():
 # Include routers
 app.include_router(actual_expense_entries_router.router)
 app.include_router(available_cash_router.router)
+app.include_router(contributions.router)
 app.include_router(debt_router.router)
 app.include_router(fixed_expense_entries_router.router)
 app.include_router(income_entries_router.router)
