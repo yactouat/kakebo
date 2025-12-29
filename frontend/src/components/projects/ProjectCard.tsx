@@ -1,9 +1,10 @@
 import { ActionIcon, Badge, Button, Card, Group, Progress, Stack, Text } from '@mantine/core';
 import dayjs from 'dayjs';
-import { IconConfetti, IconEdit, IconTrash } from '@tabler/icons-react';
+import { IconEdit, IconTrash } from '@tabler/icons-react';
 
 import type { Project } from '../../models/Project';
 import { formatCurrency } from '../../utils/currency';
+import { getCurrentMilestone } from '../../utils/milestones';
 
 interface ProjectCardProps {
   onContribution: (project: Project) => void;
@@ -11,14 +12,6 @@ interface ProjectCardProps {
   onUpdate: (project: Project) => void;
   project: Project;
 }
-
-const getMilestone = (progress: number): number | null => {
-  if (progress >= 100) return 100;
-  if (progress >= 75) return 75;
-  if (progress >= 50) return 50;
-  if (progress >= 25) return 25;
-  return null;
-};
 
 const getPriorityColor = (priority: string): string => {
   switch (priority.toLowerCase()) {
@@ -44,7 +37,7 @@ const formatTargetDate = (dateString: string): string => {
 };
 
 export const ProjectCard = ({ onContribution, onDelete, onUpdate, project }: ProjectCardProps) => {
-  const milestone = getMilestone(project.progress_percentage);
+  const milestone = getCurrentMilestone(project.progress_percentage);
   const priorityColor = getPriorityColor(project.priority);
   const progressColor = getProgressColor(project.progress_percentage);
 
@@ -88,7 +81,12 @@ export const ProjectCard = ({ onContribution, onDelete, onUpdate, project }: Pro
           <Group justify="space-between" mb="xs">
             <Text c="dimmed" size="sm">Progress</Text>
             {milestone !== null && (
-              <Badge color="violet" leftSection={<IconConfetti size={12} />} size="sm">
+              <Badge 
+                color="violet" 
+                leftSection={milestone === 100 ? '🎉🎉🎉' : '🎉'} 
+                size="sm"
+                variant="light"
+              >
                 {milestone}% Milestone!
               </Badge>
             )}
