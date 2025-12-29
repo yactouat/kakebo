@@ -14,6 +14,27 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # Get absolute path to the credentials file (one directory up from this script)
 SCRIPT_DIR = Path(__file__).parent.resolve()
 SERVICE_ACCOUNT_FILE = str(SCRIPT_DIR.parent / 'gdrive-sa-creds.json')
+BACKUP_LOG_FILE = SCRIPT_DIR.parent / 'backup.log'
+
+def log_message(message):
+    """Write a timestamped message to backup.log and print it."""
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    log_entry = f"[{timestamp}] {message}\n"
+    try:
+        with open(BACKUP_LOG_FILE, 'a', encoding='utf-8') as f:
+            f.write(log_entry)
+    except Exception as e:
+        error_timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        error_message = f"Error writing to log file: {e}"
+        error_entry = f"[{error_timestamp}] {error_message}\n"
+        try:
+            with open(BACKUP_LOG_FILE, 'a', encoding='utf-8') as f:
+                f.write(error_entry)
+        except Exception:
+            # If we can't write to the log file at all, just print
+            print(f"Error writing to log file: {e}")
+        print(error_message)
+    print(message)
 
 # The scope you authorized in the Admin Console (requires to be a Workspace Admin)
 SCOPES = ['https://www.googleapis.com/auth/drive']
@@ -41,7 +62,7 @@ def authenticate_drive_headless():
         return service
         
     except Exception as e:
-        print(f"Authentication Error: {e}")
+        log_message(f"Authentication Error: {e}")
         return None
 
 def find_folder_by_name(service, folder_name):
@@ -56,7 +77,7 @@ def find_folder_by_name(service, folder_name):
             return folders[0]['id']
         return None
     except Exception as e:
-        print(f"Error finding folder: {e}")
+        log_message(f"Error finding folder: {e}")
         return None
 
 def find_file_by_name(service, filename, parent_folder_id=None):
@@ -74,14 +95,14 @@ def find_file_by_name(service, filename, parent_folder_id=None):
             return files[0]['id']
         return None
     except Exception as e:
-        print(f"Error finding file: {e}")
+        log_message(f"Error finding file: {e}")
         return None
 
 def upload_file(service, local_file_path, drive_filename=None, destination_folder_id=None, existing_file_id=None):
     """Upload or update a local file to Google Drive."""
     try:
         if not os.path.exists(local_file_path):
-            print(f"Error: Local file not found: {local_file_path}")
+            log_message(f"Error: Local file not found: {local_file_path}")
             return None
         
         media = MediaFileUpload(local_file_path, resumable=True)
@@ -116,7 +137,7 @@ def upload_file(service, local_file_path, drive_filename=None, destination_folde
                     update_params['addParents'] = destination_folder_id
             
             updated_file = service.files().update(**update_params).execute()
-            print(f"Success! File Updated: {updated_file.get('name')} ({updated_file.get('id')})")
+            log_message(f"Success! File Updated: {updated_file.get('name')} ({updated_file.get('id')})")
             return updated_file
         else:
             # Create new file - can include 'parents' in metadata for new files
@@ -131,10 +152,10 @@ def upload_file(service, local_file_path, drive_filename=None, destination_folde
                 media_body=media,
                 fields='id, name, webViewLink'
             ).execute()
-            print(f"Success! File Uploaded: {uploaded_file.get('name')} ({uploaded_file.get('id')})")
+            log_message(f"Success! File Uploaded: {uploaded_file.get('name')} ({uploaded_file.get('id')})")
             return uploaded_file
     except Exception as e:
-        print(f"Upload Error: {e}")
+        log_message(f"Upload Error: {e}")
         return None
 
 def copy_file(service, origin_file_id, new_name=None, destination_folder_id=None):
@@ -152,18 +173,19 @@ def copy_file(service, origin_file_id, new_name=None, destination_folder_id=None
             fields='id, name, webViewLink'
         ).execute()
 
-        print(f"Success! File Copied: {copied_file.get('name')} ({copied_file.get('id')})")
+        log_message(f"Success! File Copied: {copied_file.get('name')} ({copied_file.get('id')})")
         return copied_file
 
     except Exception as e:
-        print(f"Copy Error: {e}")
+        log_message(f"Copy Error: {e}")
         return None
 
 if __name__ == '__main__':
+    log_message("Starting database backup to Google Drive")
     # Full path to your JSON key on the Ubuntu server
     # e.g., /opt/my_app/service_account.json
     if not os.path.exists(SERVICE_ACCOUNT_FILE):
-        print(f"Error: Could not find {SERVICE_ACCOUNT_FILE}")
+        log_message(f"Error: Could not find {SERVICE_ACCOUNT_FILE}")
     else:
         # Authenticate
         service = authenticate_drive_headless()
@@ -174,16 +196,16 @@ if __name__ == '__main__':
             folder_id = find_folder_by_name(service, FOLDER_NAME)
             
             if not folder_id:
-                print(f"Error: Could not find folder '{FOLDER_NAME}' in Google Drive")
+                log_message(f"Error: Could not find folder '{FOLDER_NAME}' in Google Drive")
                 exit(1)
             
-            print(f"Found folder '{FOLDER_NAME}' ({folder_id})")
+            log_message(f"Found folder '{FOLDER_NAME}' ({folder_id})")
             
             # Get absolute path to the local database file
             LOCAL_DB_PATH = SCRIPT_DIR.parent / 'kakebo.db'
             
             if not os.path.exists(LOCAL_DB_PATH):
-                print(f"Error: Database file not found: {LOCAL_DB_PATH}")
+                log_message(f"Error: Database file not found: {LOCAL_DB_PATH}")
             else:
                 # First, upload or update the main database file in Google Drive with latest local version
                 MAIN_DB_NAME = 'kakebo.db'
@@ -195,15 +217,15 @@ if __name__ == '__main__':
                     existing_file_id = find_file_by_name(service, MAIN_DB_NAME)
                 
                 if existing_file_id:
-                    print(f"Found existing file in Drive: {MAIN_DB_NAME} ({existing_file_id})")
-                    print(f"Updating with latest local version...")
+                    log_message(f"Found existing file in Drive: {MAIN_DB_NAME} ({existing_file_id})")
+                    log_message(f"Updating with latest local version...")
                     uploaded = upload_file(service, str(LOCAL_DB_PATH), MAIN_DB_NAME, destination_folder_id=folder_id, existing_file_id=existing_file_id)
                 else:
-                    print(f"Uploading {MAIN_DB_NAME} to Google Drive...")
+                    log_message(f"Uploading {MAIN_DB_NAME} to Google Drive...")
                     uploaded = upload_file(service, str(LOCAL_DB_PATH), MAIN_DB_NAME, destination_folder_id=folder_id)
                 
                 if not uploaded:
-                    print("Failed to upload/update file. Exiting.")
+                    log_message("Failed to upload/update file. Exiting.")
                     exit(1)
                 
                 source_file_id = uploaded.get('id')
@@ -211,5 +233,6 @@ if __name__ == '__main__':
                 # Create a backup copy with timestamp
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
                 backup_name = f'kakebo_backup_{timestamp}.db'
-                print(f"Creating backup copy: {backup_name}")
+                log_message(f"Creating backup copy: {backup_name}")
                 copy_file(service, source_file_id, new_name=backup_name, destination_folder_id=folder_id)
+                log_message("Backup completed successfully")
