@@ -59,31 +59,19 @@ def validate_target_date(date_str: str) -> None:
 
 
 def validate_unique_savings_account(conn, account_name: str, exclude_project_id: Optional[int] = None) -> None:
-    """Validate that savings_account_name is unique in the database.
+    """Validate that savings_account_name is not empty.
+    
+    Note: Multiple projects can share the same savings account name.
+    This function only validates that the account name is provided.
     
     Args:
-        conn: Database connection
+        conn: Database connection (kept for API compatibility, not used)
         account_name: Savings account name to validate
-        exclude_project_id: Optional project ID to exclude from uniqueness check (for updates)
+        exclude_project_id: Optional project ID (kept for API compatibility, not used)
     
     Raises:
-        ValueError: If savings_account_name already exists in the database
+        ValueError: If savings_account_name is empty
     """
-    cursor = conn.cursor()
-    
-    if exclude_project_id is not None:
-        cursor.execute(
-            "SELECT id FROM projects WHERE savings_account_name = ? AND id != ?",
-            (account_name, exclude_project_id)
-        )
-    else:
-        cursor.execute(
-            "SELECT id FROM projects WHERE savings_account_name = ?",
-            (account_name,)
-        )
-    
-    existing = cursor.fetchone()
-    
-    if existing:
-        raise ValueError(f"Savings account name '{account_name}' already exists")
+    if not account_name or not account_name.strip():
+        raise ValueError("Savings account name cannot be empty")
 
