@@ -1,24 +1,30 @@
-import { Button, Container, Grid, Group, Loader, Paper, Select, SegmentedControl, Stack, Text, TextInput, NumberInput, Title } from '@mantine/core';
-import { useForm } from '@mantine/form';
+import { Button, Container, Grid, Group, Loader, Modal, NumberInput, Select, SegmentedControl, Stack, Text, TextInput, Title } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import { useEffect, useMemo, useState } from 'react';
+import { useForm } from '@mantine/form';
 
+import { ContributionForm } from '../components/projects/ContributionForm';
 import { EntryModal, type FormField } from '../components/shared/EntryModal';
+import type { Project } from '../models/Project';
+import { ProjectCard } from '../components/projects/ProjectCard';
+import type { ProjectCreate } from '../dtos/project';
+import { ProjectForm } from '../components/projects/ProjectForm';
 import { projectService } from '../services/projectService';
 import { useAppStore } from '../stores/useAppStore';
-import type { ProjectCreate } from '../dtos/project';
-import type { Project } from '../models/Project';
-import { formatCurrency } from '../utils/currency';
 
 const ProjectsPage = () => {
-  const { dataChangeCounter, notifyDataChange } = useAppStore();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<string>('priority');
+  const [contributionProject, setContributionProject] = useState<Project | null>(null);
   const [createOpened, setCreateOpened] = useState(false);
+  const [deleteProject, setDeleteProject] = useState<Project | null>(null);
+  const { dataChangeCounter, notifyDataChange } = useAppStore();
+  const [editProject, setEditProject] = useState<Project | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [sortBy, setSortBy] = useState<string>('priority');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const createForm = useForm<ProjectCreate>({
     initialValues: {
@@ -203,6 +209,60 @@ const ProjectsPage = () => {
     }
   };
 
+  const handleUpdate = (project: Project) => {
+    setEditProject(project);
+  };
+
+  const handleEditClose = () => {
+    setEditProject(null);
+  };
+
+  const handleEditSave = () => {
+    setEditProject(null);
+    notifyDataChange();
+  };
+
+  const handleContribution = (project: Project) => {
+    setContributionProject(project);
+  };
+
+  const handleContributionClose = () => {
+    setContributionProject(null);
+  };
+
+  const handleContributionSuccess = () => {
+    setContributionProject(null);
+    notifyDataChange();
+  };
+
+  const handleDelete = (project: Project) => {
+    setDeleteProject(project);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteProject) return;
+    try {
+      await projectService.deleteProject(deleteProject.id);
+      notifications.show({
+        color: 'green',
+        message: 'Project deleted successfully',
+        title: 'Success',
+      });
+      notifyDataChange();
+      setDeleteProject(null);
+    } catch (err) {
+      notifications.show({
+        color: 'red',
+        message: err instanceof Error ? err.message : 'Failed to delete project',
+        title: 'Error',
+      });
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteProject(null);
+  };
+
   return (
     <Container size="xl" style={{ width: '100%' }}>
       <Group justify="space-between" mb="xl">
@@ -272,73 +332,12 @@ const ProjectsPage = () => {
         <Grid>
           {filteredAndSortedProjects.map((project) => (
             <Grid.Col key={project.id} span={4}>
-              <Paper shadow="sm" p="md" withBorder>
-                <Stack gap="xs">
-                  <Group justify="space-between">
-                    <Text fw={600} size="lg">
-                      {project.name}
-                    </Text>
-                    <Text size="sm" c="dimmed">
-                      {project.status}
-                    </Text>
-                  </Group>
-                  {project.description && (
-                    <Text size="sm" c="dimmed">
-                      {project.description}
-                    </Text>
-                  )}
-                  <Group justify="space-between">
-                    <Text size="sm" c="dimmed">
-                      Priority:
-                    </Text>
-                    <Text size="sm" fw={500}>
-                      {project.priority}
-                    </Text>
-                  </Group>
-                  {project.category && (
-                    <Group justify="space-between">
-                      <Text size="sm" c="dimmed">
-                        Category:
-                      </Text>
-                      <Text size="sm">
-                        {project.category}
-                      </Text>
-                    </Group>
-                  )}
-                  <Group justify="space-between">
-                    <Text size="sm" c="dimmed">
-                      Target:
-                    </Text>
-                    <Text size="sm" fw={500}>
-                      {formatCurrency(project.target_amount, project.currency)}
-                    </Text>
-                  </Group>
-                  <Group justify="space-between">
-                    <Text size="sm" c="dimmed">
-                      Current:
-                    </Text>
-                    <Text size="sm" fw={500}>
-                      {formatCurrency(project.current_savings, project.currency)}
-                    </Text>
-                  </Group>
-                  <Group justify="space-between">
-                    <Text size="sm" c="dimmed">
-                      Progress:
-                    </Text>
-                    <Text size="sm" fw={500}>
-                      {project.progress_percentage.toFixed(1)}%
-                    </Text>
-                  </Group>
-                  <Group justify="space-between">
-                    <Text size="sm" c="dimmed">
-                      Target Date:
-                    </Text>
-                    <Text size="sm">
-                      {new Date(project.target_date).toLocaleDateString()}
-                    </Text>
-                  </Group>
-                </Stack>
-              </Paper>
+              <ProjectCard
+                onContribution={handleContribution}
+                onDelete={handleDelete}
+                onUpdate={handleUpdate}
+                project={project}
+              />
             </Grid.Col>
           ))}
         </Grid>
@@ -361,6 +360,45 @@ const ProjectsPage = () => {
         submitLabel="Create"
         title="Create New Project"
       />
+
+      {/* Edit Project Modal */}
+      {editProject && (
+        <ProjectForm
+          onClose={handleEditClose}
+          onSave={handleEditSave}
+          project={editProject}
+        />
+      )}
+
+      {/* Contribution Modal */}
+      {contributionProject && (
+        <ContributionForm
+          onClose={handleContributionClose}
+          onSuccess={handleContributionSuccess}
+          project={contributionProject}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        onClose={handleDeleteCancel}
+        opened={deleteProject !== null}
+        title="Delete Project"
+      >
+        <Stack gap="md">
+          <Text>
+            Are you sure you want to delete the project &quot;{deleteProject?.name}&quot;? This action cannot be undone.
+          </Text>
+          <Group justify="flex-end">
+            <Button onClick={handleDeleteCancel} variant="subtle">
+              Cancel
+            </Button>
+            <Button color="red" onClick={handleDeleteConfirm}>
+              Delete
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Container>
   );
 };
