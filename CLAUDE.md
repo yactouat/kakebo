@@ -113,6 +113,18 @@ When modifying entries from a previous month, the system automatically:
 
 **For detailed documentation, see:** [Balance Carry-Forward System](docs/balance-carry-forward.md)
 
+## Backup System
+
+The application includes an automated backup system that uploads the SQLite database (`kakebo.db`) to Google Drive on a schedule. The backup script uses Google Service Account authentication with Domain-Wide Delegation, which requires Google Workspace Admin privileges.
+
+**Backup script:** `/api/scripts/backup_db_to_gdrive.py`
+- Uploads `kakebo.db` to a Google Drive folder named `kakebo`
+- Creates timestamped backup copies for historical retention
+- Uses service account credentials from `api/gdrive-sa-creds.json`
+- Requires `IMPERSONATED_USER_EMAIL` environment variable in `api/.env`
+
+**For detailed setup instructions, see:** [Automated Database Backup to Google Drive](docs/backup-to-gdrive.md)
+
 ## State Management Details
 
 **Zustand store** (`/frontend/src/stores/useAppStore.ts`):

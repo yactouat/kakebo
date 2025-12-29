@@ -35,6 +35,7 @@ Frontend runs at `http://localhost:5173`
 
 ## Documentation
 
+- [Automated Database Backup to Google Drive](docs/backup-to-gdrive.md) - Setting up daily automated backups using cron jobs
 - [Balance Carry-Forward System](docs/balance-carry-forward.md) - How the automatic monthly balance carry-forward works
 - [Local Service Setup Guide](docs/local-service-setup.md) - Running the application as a systemd service on Ubuntu
 
