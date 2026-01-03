@@ -239,7 +239,25 @@ def init_db():
                 """)
             
             print("Migration: Removed UNIQUE constraint on savings_account_name in projects table")
-    
+
+    # Migration: Drop projects-related tables
+    # Check if projects table exists
+    cursor.execute("""
+        SELECT name FROM sqlite_master
+        WHERE type='table'
+        AND name='projects'
+    """)
+    projects_table_exists = cursor.fetchone() is not None
+
+    if projects_table_exists:
+        # Drop project_contributions table first (due to foreign key)
+        cursor.execute("DROP TABLE IF EXISTS project_contributions")
+        print("Migration: Dropped project_contributions table")
+
+        # Drop projects table
+        cursor.execute("DROP TABLE IF EXISTS projects")
+        print("Migration: Dropped projects table")
+
     conn.commit()
     conn.close()
     print(f"Database initialized: {DB_PATH}")

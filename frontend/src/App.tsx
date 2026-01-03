@@ -19,7 +19,6 @@ import Layout from './components/Layout';
 import DiagramsPage from './pages/DiagramsPage';
 import LedgerPage from './pages/LedgerPage';
 import NetWorthPage from './pages/NetWorthPage';
-import ProjectsPage from './pages/ProjectsPage';
 
 const App = () => {
   return (
@@ -31,7 +30,6 @@ const App = () => {
           <Route element={<DiagramsPage />} path="/diagrams" />
           <Route element={<LedgerPage />} path="/ledger" />
           <Route element={<NetWorthPage />} path="/net-worth" />
-          <Route element={<ProjectsPage />} path="/projects" />
         </Routes>
       </Layout>
     </MantineProvider>
