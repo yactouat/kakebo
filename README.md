@@ -46,15 +46,17 @@ To run the entire stack as a systemd service on Ubuntu 24, always available at `
 
 ### Quick Redeploy
 
+> **Note:** The following commands assume you have cloned the repository in your home folder (e.g., `/home/{user}/kakebo`). If your repository is located elsewhere, adjust the paths accordingly.
+
 After making changes to the code, redeploy the application:
 
 **Redeploy everything:**
 ```bash
 # Backend
-cd /home/yactouat/kakebo/api && source venv/bin/activate && pip install -r requirements.txt && sudo systemctl restart kakebo-api.service
+cd /home/{user}/kakebo/api && source venv/bin/activate && pip install -r requirements.txt && sudo systemctl restart kakebo-api.service
 
 # Frontend
-cd /home/yactouat/kakebo/frontend && yarn build && sudo systemctl restart kakebo-frontend.service
+cd /home/{user}/kakebo/frontend && yarn build && sudo systemctl restart kakebo-frontend.service
 ```
 
 **Check service status:**
@@ -67,7 +69,7 @@ sudo systemctl status kakebo-frontend.service
 
 Contributions are welcome! Whether you're fixing bugs, adding features, or improving documentation, your help is appreciated.
 
-**Have questions or ideas?** Join the discussion at https://github.com/yactouat/kakebo/discussions
+**Have questions or ideas?** Join the discussion at https://github.com/{user}/kakebo/discussions
 
 ## License
 

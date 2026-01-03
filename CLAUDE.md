@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Kakebo is a Japanese budgeting method application for personal finance management. The application tracks income, fixed expenses, and actual expenses (categorized as essential, comfort, entertainment, extras, or unforeseen). It calculates available cash per month and automatically carries forward balance entries between months.
+Kakebo is a Japanese budgeting method application for personal finance management. The application tracks income, fixed expenses, and actual expenses (categorized as essential, comfort, entertainment, extras, or unforeseen). It calculates available cash per month.
 
 ## Architecture
 
@@ -19,7 +19,6 @@ Kakebo is a Japanese budgeting method application for personal finance managemen
 - Services return dictionaries; routers handle Pydantic DTO conversion
 - Frontend uses custom `useEntryTable` hook for reusable CRUD operations across all entry types
 - Global state in Zustand manages UI coordination (tabs, month/year selection) and data change notifications via counter pattern
-- Balance carry-forward system automatically creates income/expense entries when previous month data changes
 
 ## Development Commands
 
@@ -103,16 +102,6 @@ Database migrations are handled automatically via `init_db()` which adds missing
 
 **Frontend:** Mantine form validation with real-time feedback
 
-## Balance Carry-Forward System
-
-When modifying entries from a previous month, the system automatically:
-1. Calculates the previous month's available cash
-2. If positive: creates an income entry for current month with item "{Month} {Year} balance"
-3. If negative: creates an unforeseen expense entry for current month
-4. This logic is in `/api/services/balance_entry_services.py`
-
-**For detailed documentation, see:** [Balance Carry-Forward System](docs/balance-carry-forward.md)
-
 ## Backup System
 
 The application includes an automated backup system that uploads the SQLite database (`kakebo.db`) to Google Drive on a schedule. The backup script uses Google Service Account authentication with Domain-Wide Delegation, which requires Google Workspace Admin privileges.
@@ -183,6 +172,7 @@ When working on this codebase, follow these guidelines:
 - Implement proper database indexes for performance where needed
 - Maintain consistency with existing router structure and service layer pattern (services return dicts, routers handle DTO conversion)
 - Maintain consistent error handling and response formats across all endpoints (ValueError → 400, ValidationError → 422, generic → 500)
+- Migrations are never to be rewritten; always write NEW queries to change database schema
 - Validation should occur at multiple layers: Pydantic DTOs, custom validators, and business logic in services
 - Use the standard `APIResponse<T>` wrapper format for all API responses
 - When running Python code, always use `venv`
@@ -191,3 +181,9 @@ When working on this codebase, follow these guidelines:
 - In all files you work in, sort functions alphabetically
 - In Python, DO NOT import dependencies within functions to avoid circular imports, split logic into multiple files instead
 - Reuse current codebase patterns, if you see occasions of lifting reusable logic (whether backend API or frontend) please do so
+
+**Version Control:**
+- DO NOT perform any git operations (add, commit, push, pull, etc.)
+- DO NOT create commits or push changes to remote repositories
+- Leave all version control operations to the developer
+- Focus only on code implementation and testing

@@ -60,7 +60,7 @@ export const ContributionHistory = ({ projectId }: ContributionHistoryProps) => 
   const [contributions, setContributions] = useState<Contribution[]>([]);
   const [currency, setCurrency] = useState<string>('EUR');
   const [loading, setLoading] = useState<boolean>(true);
-  const [project, setProject] = useState<Project | null>(null);
+  const [_, setProject] = useState<Project | null>(null);
 
   const fetchContributions = async () => {
     try {
