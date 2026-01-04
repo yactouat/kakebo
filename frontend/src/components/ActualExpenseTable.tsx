@@ -1,4 +1,4 @@
-import { Button, Group, NumberInput, Select, TextInput, Table, ActionIcon, Checkbox } from '@mantine/core';
+import { Autocomplete, Button, Group, NumberInput, Select, TextInput, Table, ActionIcon, Checkbox } from '@mantine/core';
 import { IconPlus, IconEdit, IconTrash, IconArrowsJoin, IconChevronUp, IconChevronDown, IconArrowsUpDown, IconSearch } from '@tabler/icons-react';
 import { useState, useMemo } from 'react';
 
@@ -9,6 +9,7 @@ import { EntryModal } from './shared/EntryModal';
 import { formatCurrency } from '../utils/currency';
 import { getDefaultDate } from '../utils/months';
 import { useAppStore } from '../stores/useAppStore';
+import { useAutocomplete } from '../hooks/useAutocomplete';
 import { useEntryTable } from '../hooks/useEntryTable';
 import { useTableSort } from '../hooks/useTableSort';
 
@@ -38,6 +39,7 @@ interface ActualExpenseTableProps {
 const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initialTotalShown }: ActualExpenseTableProps) => {
   const { selectedMonth, selectedYear } = useAppStore();
   const [itemFilter, setItemFilter] = useState('');
+  const itemAutocomplete = useAutocomplete({ entity: 'actual_expense_entries', field: 'item' });
 
   const {
     bulkUpdateOpened,
@@ -388,9 +390,10 @@ const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initi
           {
             key: 'item',
             render: (form) => (
-              <TextInput
+              <Autocomplete
                 label="Item"
                 placeholder="Enter item description"
+                data={itemAutocomplete.suggestions}
                 required
                 {...form.getInputProps('item')}
               />
@@ -411,7 +414,12 @@ const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initi
         ]}
         form={createForm}
         onClose={closeCreate}
-        onSubmit={handleCreate}
+        onSubmit={async (values) => {
+          await handleCreate(values);
+          if (values.item) {
+            await itemAutocomplete.saveSuggestion(values.item);
+          }
+        }}
         opened={createOpened}
         submitLabel="Create"
         title="Create Actual Expense Entry"
@@ -447,9 +455,10 @@ const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initi
           {
             key: 'item',
             render: (form) => (
-              <TextInput
+              <Autocomplete
                 label="Item"
                 placeholder="Enter item description"
+                data={itemAutocomplete.suggestions}
                 required
                 {...form.getInputProps('item')}
               />
@@ -470,7 +479,13 @@ const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initi
         ]}
         form={editForm}
         onClose={closeEdit}
-        onSubmit={handleUpdate}
+        onSubmit={async (values) => {
+          const currentItem = editForm.values.item;
+          await handleUpdate(values);
+          if (values.item && values.item !== currentItem) {
+            await itemAutocomplete.saveSuggestion(values.item);
+          }
+        }}
         opened={editOpened}
         submitLabel="Update"
         title="Edit Actual Expense Entry"
@@ -505,9 +520,10 @@ const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initi
           {
             key: 'item',
             render: (form) => (
-              <TextInput
+              <Autocomplete
                 label="Item"
                 placeholder="Enter item description (leave empty to keep existing)"
+                data={itemAutocomplete.suggestions}
                 {...form.getInputProps('item')}
               />
             ),
@@ -526,7 +542,12 @@ const ActualExpenseTable = ({ expenseData: initialExpenseData, totalShown: initi
         ]}
         form={editForm}
         onClose={closeBulkUpdate}
-        onSubmit={handleBulkUpdate}
+        onSubmit={async (values) => {
+          await handleBulkUpdate(values);
+          if (values.item) {
+            await itemAutocomplete.saveSuggestion(values.item);
+          }
+        }}
         opened={bulkUpdateOpened}
         submitLabel="Update Selected"
         title={`Update ${selectedIds.length} Actual Expense Entr${selectedIds.length === 1 ? 'y' : 'ies'}`}

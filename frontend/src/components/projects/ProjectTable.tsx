@@ -1,4 +1,4 @@
-import { Badge, Button, Group, NumberInput, Progress, Select, Textarea, TextInput } from '@mantine/core';
+import { Autocomplete, Badge, Button, Group, NumberInput, Progress, Select, Textarea, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconPlus } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
@@ -13,6 +13,7 @@ import { projectService } from '../../services/projectService';
 import { savingsAccountService } from '../../services/savingsAccountService';
 import { formatCurrency } from '../../utils/currency';
 import { useAppStore } from '../../stores/useAppStore';
+import { useAutocomplete } from '../../hooks/useAutocomplete';
 import { useTableSort } from '../../hooks/useTableSort';
 
 const PROJECT_STATUSES: { value: ProjectStatus; label: string }[] = [
@@ -33,6 +34,8 @@ const ProjectTable = () => {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [accountFilter, setAccountFilter] = useState<string | null>(null);
+  const nameAutocomplete = useAutocomplete({ entity: 'projects', field: 'name' });
+  const descriptionAutocomplete = useAutocomplete({ entity: 'projects', field: 'description' });
 
   const createForm = useForm<ProjectCreate>({
     initialValues: {
@@ -139,6 +142,13 @@ const ProjectTable = () => {
         values.priority_order = maxPriority + 1;
       }
       await projectService.create(values);
+      // Save autocomplete suggestions
+      if (values.name) {
+        await nameAutocomplete.saveSuggestion(values.name);
+      }
+      if (values.description) {
+        await descriptionAutocomplete.saveSuggestion(values.description);
+      }
       createForm.reset();
       await fetchProjects();
       notifyDataChange();
@@ -176,6 +186,13 @@ const ProjectTable = () => {
 
     try {
       await projectService.update(editingProject.id, values);
+      // Save autocomplete suggestions if changed
+      if (values.name && values.name !== editingProject.name) {
+        await nameAutocomplete.saveSuggestion(values.name);
+      }
+      if (values.description && values.description !== editingProject.description) {
+        await descriptionAutocomplete.saveSuggestion(values.description);
+      }
       editForm.reset();
       await fetchProjects();
       notifyDataChange();
@@ -343,9 +360,10 @@ const ProjectTable = () => {
     {
       key: 'name',
       render: (form) => (
-        <TextInput
+        <Autocomplete
           label="Name"
           placeholder="Enter project name"
+          data={nameAutocomplete.suggestions}
           required
           {...form.getInputProps('name')}
         />
@@ -430,9 +448,10 @@ const ProjectTable = () => {
     {
       key: 'name',
       render: (form) => (
-        <TextInput
+        <Autocomplete
           label="Name"
           placeholder="Enter project name"
+          data={nameAutocomplete.suggestions}
           required
           {...form.getInputProps('name')}
         />

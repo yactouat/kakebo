@@ -9,6 +9,7 @@ from pathlib import Path
 from db import init_db
 from routers import (
     actual_expense_entries_router,
+    autocomplete_router,
     available_cash_router,
     contributions_router,
     debt_router,
@@ -72,6 +73,7 @@ async def root():
 
 # Include routers
 app.include_router(actual_expense_entries_router.router)
+app.include_router(autocomplete_router.router)
 app.include_router(available_cash_router.router)
 app.include_router(contributions_router.router)
 app.include_router(debt_router.router)

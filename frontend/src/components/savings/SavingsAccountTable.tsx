@@ -1,4 +1,4 @@
-import { Button, Group, NumberInput, Select, TextInput } from '@mantine/core';
+import { Autocomplete, Button, Group, NumberInput, Select, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconPlus } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
@@ -11,6 +11,7 @@ import type { SavingsAccountCreate, SavingsAccountUpdate } from '../../dtos/savi
 import { savingsAccountService } from '../../services/savingsAccountService';
 import { formatCurrency } from '../../utils/currency';
 import { useAppStore } from '../../stores/useAppStore';
+import { useAutocomplete } from '../../hooks/useAutocomplete';
 import { useTableSort } from '../../hooks/useTableSort';
 
 interface SavingsAccountTableProps {
@@ -25,6 +26,8 @@ const SavingsAccountTable = ({ accounts: initialAccounts, totalShown: initialTot
   const [createOpened, setCreateOpened] = useState(false);
   const [editOpened, setEditOpened] = useState(false);
   const [editingAccount, setEditingAccount] = useState<SavingsAccount | null>(null);
+  const nameAutocomplete = useAutocomplete({ entity: 'savings_accounts', field: 'name' });
+  const bankInstitutionAutocomplete = useAutocomplete({ entity: 'savings_accounts', field: 'bank_institution' });
 
   const createForm = useForm<SavingsAccountCreate>({
     initialValues: {
@@ -77,6 +80,13 @@ const SavingsAccountTable = ({ accounts: initialAccounts, totalShown: initialTot
   const handleCreate = async (values: SavingsAccountCreate) => {
     try {
       await savingsAccountService.create(values);
+      // Save autocomplete suggestions
+      if (values.name) {
+        await nameAutocomplete.saveSuggestion(values.name);
+      }
+      if (values.bank_institution) {
+        await bankInstitutionAutocomplete.saveSuggestion(values.bank_institution);
+      }
       createForm.reset();
       await fetchAccounts();
       notifyDataChange();
@@ -111,6 +121,13 @@ const SavingsAccountTable = ({ accounts: initialAccounts, totalShown: initialTot
 
     try {
       await savingsAccountService.update(editingAccount.id, values);
+      // Save autocomplete suggestions if changed
+      if (values.name && values.name !== editingAccount.name) {
+        await nameAutocomplete.saveSuggestion(values.name);
+      }
+      if (values.bank_institution && values.bank_institution !== editingAccount.bank_institution) {
+        await bankInstitutionAutocomplete.saveSuggestion(values.bank_institution);
+      }
       editForm.reset();
       await fetchAccounts();
       notifyDataChange();
@@ -196,9 +213,10 @@ const SavingsAccountTable = ({ accounts: initialAccounts, totalShown: initialTot
     {
       key: 'name',
       render: (form) => (
-        <TextInput
+        <Autocomplete
           label="Name"
           placeholder="Enter account name"
+          data={nameAutocomplete.suggestions}
           required
           {...form.getInputProps('name')}
         />
@@ -233,9 +251,10 @@ const SavingsAccountTable = ({ accounts: initialAccounts, totalShown: initialTot
     {
       key: 'bank_institution',
       render: (form) => (
-        <TextInput
+        <Autocomplete
           label="Bank/Institution (Optional)"
           placeholder="Enter bank or institution name"
+          data={bankInstitutionAutocomplete.suggestions}
           {...form.getInputProps('bank_institution')}
         />
       ),
@@ -246,9 +265,10 @@ const SavingsAccountTable = ({ accounts: initialAccounts, totalShown: initialTot
     {
       key: 'name',
       render: (form) => (
-        <TextInput
+        <Autocomplete
           label="Name"
           placeholder="Enter account name"
+          data={nameAutocomplete.suggestions}
           required
           {...form.getInputProps('name')}
         />
@@ -283,9 +303,10 @@ const SavingsAccountTable = ({ accounts: initialAccounts, totalShown: initialTot
     {
       key: 'bank_institution',
       render: (form) => (
-        <TextInput
+        <Autocomplete
           label="Bank/Institution (Optional)"
           placeholder="Enter bank or institution name"
+          data={bankInstitutionAutocomplete.suggestions}
           {...form.getInputProps('bank_institution')}
         />
       ),

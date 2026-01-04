@@ -1,4 +1,4 @@
-import { Button, Group, NumberInput, Textarea, TextInput } from '@mantine/core';
+import { Autocomplete, Button, Group, NumberInput, Textarea, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconPlus } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
@@ -11,6 +11,7 @@ import type { ContributionCreate, ContributionUpdate } from '../../dtos/contribu
 import { contributionService } from '../../services/contributionService';
 import { formatCurrency } from '../../utils/currency';
 import { useAppStore } from '../../stores/useAppStore';
+import { useAutocomplete } from '../../hooks/useAutocomplete';
 import { useTableSort } from '../../hooks/useTableSort';
 
 interface ContributionTableProps {
@@ -24,6 +25,7 @@ const ContributionTable = ({ savingsAccountId }: ContributionTableProps) => {
   const [createOpened, setCreateOpened] = useState(false);
   const [editOpened, setEditOpened] = useState(false);
   const [editingContribution, setEditingContribution] = useState<Contribution | null>(null);
+  const notesAutocomplete = useAutocomplete({ entity: 'contributions', field: 'notes' });
 
   const createForm = useForm<ContributionCreate>({
     initialValues: {
@@ -74,6 +76,10 @@ const ContributionTable = ({ savingsAccountId }: ContributionTableProps) => {
   const handleCreate = async (values: ContributionCreate) => {
     try {
       await contributionService.create({ ...values, savings_account_id: savingsAccountId });
+      // Save autocomplete suggestion
+      if (values.notes) {
+        await notesAutocomplete.saveSuggestion(values.notes);
+      }
       createForm.reset();
       createForm.setFieldValue('date', new Date().toISOString().split('T')[0]);
       await fetchContributions();
@@ -109,6 +115,10 @@ const ContributionTable = ({ savingsAccountId }: ContributionTableProps) => {
 
     try {
       await contributionService.update(editingContribution.id, values);
+      // Save autocomplete suggestion if changed
+      if (values.notes && values.notes !== editingContribution.notes) {
+        await notesAutocomplete.saveSuggestion(values.notes);
+      }
       editForm.reset();
       await fetchContributions();
       notifyDataChange();

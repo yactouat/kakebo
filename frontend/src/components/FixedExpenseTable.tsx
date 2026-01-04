@@ -1,4 +1,4 @@
-import { Button, Group, NumberInput, Select, TextInput } from '@mantine/core';
+import { Autocomplete, Button, Group, NumberInput, Select, TextInput } from '@mantine/core';
 import { IconCopy, IconPlus, IconTrash, IconArrowsJoin, IconSearch } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { useState, useMemo } from 'react';
@@ -11,6 +11,7 @@ import { fixedExpenseEntriesApi } from '../services/fixedExpenseEntriesApi';
 import { formatCurrency } from '../utils/currency';
 import { MONTHS } from '../utils/months';
 import { useAppStore } from '../stores/useAppStore';
+import { useAutocomplete } from '../hooks/useAutocomplete';
 import { useEntryTable } from '../hooks/useEntryTable';
 import { useTableSort } from '../hooks/useTableSort';
 
@@ -23,6 +24,7 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
   const { notifyDataChange, selectedMonth, selectedYear } = useAppStore();
   const [copyLoading, setCopyLoading] = useState(false);
   const [itemFilter, setItemFilter] = useState('');
+  const itemAutocomplete = useAutocomplete({ entity: 'fixed_expense_entries', field: 'item' });
 
   // Helper to get default month and year
   const getDefaultMonthYear = () => {
@@ -227,9 +229,10 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
     {
       key: 'item',
       render: (form) => (
-        <TextInput
+        <Autocomplete
           label="Item"
           placeholder="Enter item description"
+          data={itemAutocomplete.suggestions}
           required
           {...form.getInputProps('item')}
         />
@@ -280,9 +283,10 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
     {
       key: 'item',
       render: (form) => (
-        <TextInput
+        <Autocomplete
           label="Item"
           placeholder="Enter item description"
+          data={itemAutocomplete.suggestions}
           required
           {...form.getInputProps('item')}
         />
@@ -415,7 +419,12 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
         fields={createFields}
         form={createForm}
         onClose={closeCreate}
-        onSubmit={handleCreate}
+        onSubmit={async (values) => {
+          await handleCreate(values);
+          if (values.item) {
+            await itemAutocomplete.saveSuggestion(values.item);
+          }
+        }}
         opened={createOpened}
         submitLabel="Create"
         title="Create Fixed Expense Entry"
@@ -425,7 +434,13 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
         fields={editFields}
         form={editForm}
         onClose={closeEdit}
-        onSubmit={handleUpdate}
+        onSubmit={async (values) => {
+          const currentItem = editForm.values.item;
+          await handleUpdate(values);
+          if (values.item && values.item !== currentItem) {
+            await itemAutocomplete.saveSuggestion(values.item);
+          }
+        }}
         opened={editOpened}
         submitLabel="Update"
         title="Edit Fixed Expense Entry"
@@ -435,7 +450,12 @@ const FixedExpenseTable = ({ expenseData: initialExpenseData, totalShown: initia
         fields={editFields}
         form={editForm}
         onClose={closeBulkUpdate}
-        onSubmit={handleBulkUpdate}
+        onSubmit={async (values) => {
+          await handleBulkUpdate(values);
+          if (values.item) {
+            await itemAutocomplete.saveSuggestion(values.item);
+          }
+        }}
         opened={bulkUpdateOpened}
         submitLabel="Update Selected"
         title={`Update ${selectedIds.length} Fixed Expense Entr${selectedIds.length === 1 ? 'y' : 'ies'}`}

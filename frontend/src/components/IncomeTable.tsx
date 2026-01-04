@@ -1,4 +1,4 @@
-import { Button, Group, NumberInput, TextInput } from '@mantine/core';
+import { Autocomplete, Button, Group, NumberInput, TextInput } from '@mantine/core';
 import { IconPlus, IconTrash, IconArrowsJoin, IconSearch } from '@tabler/icons-react';
 import { useState, useMemo } from 'react';
 
@@ -10,6 +10,7 @@ import { incomeEntriesApi } from '../services/incomeEntriesApi';
 import type { IncomeEntryCreate, IncomeEntryUpdate } from '../dtos/incomeEntry';
 import type { IncomeEntry } from '../models/IncomeEntry';
 import { useAppStore } from '../stores/useAppStore';
+import { useAutocomplete } from '../hooks/useAutocomplete';
 import { useEntryTable } from '../hooks/useEntryTable';
 import { useTableSort } from '../hooks/useTableSort';
 
@@ -21,6 +22,7 @@ interface IncomeTableProps {
 const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalShown }: IncomeTableProps) => {
   const { selectedMonth, selectedYear } = useAppStore();
   const [itemFilter, setItemFilter] = useState('');
+  const itemAutocomplete = useAutocomplete({ entity: 'income_entries', field: 'item' });
 
   const {
     bulkUpdateOpened,
@@ -161,9 +163,10 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
     {
       key: 'item',
       render: (form) => (
-        <TextInput
+        <Autocomplete
           label="Item"
           placeholder="Enter item description"
+          data={itemAutocomplete.suggestions}
           required
           {...form.getInputProps('item')}
         />
@@ -200,9 +203,10 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
     {
       key: 'item',
       render: (form) => (
-        <TextInput
+        <Autocomplete
           label="Item"
           placeholder="Enter item description"
+          data={itemAutocomplete.suggestions}
           required
           {...form.getInputProps('item')}
         />
@@ -288,7 +292,12 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
         fields={createFields}
         form={createForm}
         onClose={closeCreate}
-        onSubmit={handleCreate}
+        onSubmit={async (values) => {
+          await handleCreate(values);
+          if (values.item) {
+            await itemAutocomplete.saveSuggestion(values.item);
+          }
+        }}
         opened={createOpened}
         submitLabel="Create"
         title="Create Income Entry"
@@ -298,7 +307,13 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
         fields={editFields}
         form={editForm}
         onClose={closeEdit}
-        onSubmit={handleUpdate}
+        onSubmit={async (values) => {
+          const currentItem = editForm.values.item;
+          await handleUpdate(values);
+          if (values.item && values.item !== currentItem) {
+            await itemAutocomplete.saveSuggestion(values.item);
+          }
+        }}
         opened={editOpened}
         submitLabel="Update"
         title="Edit Income Entry"
@@ -308,7 +323,12 @@ const IncomeTable = ({ incomeData: initialIncomeData, totalShown: initialTotalSh
         fields={editFields}
         form={editForm}
         onClose={closeBulkUpdate}
-        onSubmit={handleBulkUpdate}
+        onSubmit={async (values) => {
+          await handleBulkUpdate(values);
+          if (values.item) {
+            await itemAutocomplete.saveSuggestion(values.item);
+          }
+        }}
         opened={bulkUpdateOpened}
         submitLabel="Update Selected"
         title={`Update ${selectedIds.length} Income Entr${selectedIds.length === 1 ? 'y' : 'ies'}`}

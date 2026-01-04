@@ -1,4 +1,4 @@
-import { Button, Group, NumberInput, Progress, Select, Textarea, TextInput } from '@mantine/core';
+import { Autocomplete, Button, Group, NumberInput, Progress, Select, Textarea, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconPlus } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
@@ -13,6 +13,7 @@ import { fixedExpenseEntriesApi } from '../../services/fixedExpenseEntriesApi';
 import { formatCurrency } from '../../utils/currency';
 import { monthToYYYYMM } from '../../utils/months';
 import { useAppStore } from '../../stores/useAppStore';
+import { useAutocomplete } from '../../hooks/useAutocomplete';
 import { useTableSort } from '../../hooks/useTableSort';
 import type { FixedExpenseEntry } from '../../models/FixedExpenseEntry';
 
@@ -30,6 +31,8 @@ const DebtTable = ({ debts: initialDebts, totalShown: initialTotalShown }: DebtT
   const [editingDebt, setEditingDebt] = useState<Debt | null>(null);
   const [fixedExpenses, setFixedExpenses] = useState<FixedExpenseEntry[]>([]);
   const [fixedExpensesLoading, setFixedExpensesLoading] = useState(false);
+  const nameAutocomplete = useAutocomplete({ entity: 'debt_entries', field: 'name' });
+  const notesAutocomplete = useAutocomplete({ entity: 'debt_entries', field: 'notes' });
 
   const createForm = useForm<DebtEntryCreate>({
     initialValues: {
@@ -118,6 +121,13 @@ const DebtTable = ({ debts: initialDebts, totalShown: initialTotalShown }: DebtT
     }
     try {
       await debtService.create(values);
+      // Save autocomplete suggestions
+      if (values.name) {
+        await nameAutocomplete.saveSuggestion(values.name);
+      }
+      if (values.notes) {
+        await notesAutocomplete.saveSuggestion(values.notes);
+      }
       createForm.reset();
       await fetchDebts();
       notifyDataChange();
@@ -164,6 +174,13 @@ const DebtTable = ({ debts: initialDebts, totalShown: initialTotalShown }: DebtT
     }
     try {
       await debtService.update(editingDebt.id, values);
+      // Save autocomplete suggestions if changed
+      if (values.name && values.name !== editingDebt.name) {
+        await nameAutocomplete.saveSuggestion(values.name);
+      }
+      if (values.notes && values.notes !== editingDebt.notes) {
+        await notesAutocomplete.saveSuggestion(values.notes);
+      }
       editForm.reset();
       await fetchDebts();
       notifyDataChange();
@@ -289,9 +306,10 @@ const DebtTable = ({ debts: initialDebts, totalShown: initialTotalShown }: DebtT
     {
       key: 'name',
       render: (form) => (
-        <TextInput
+        <Autocomplete
           label="Name"
           placeholder="Enter debt name"
+          data={nameAutocomplete.suggestions}
           required
           {...form.getInputProps('name')}
         />
@@ -366,9 +384,10 @@ const DebtTable = ({ debts: initialDebts, totalShown: initialTotalShown }: DebtT
     {
       key: 'name',
       render: (form) => (
-        <TextInput
+        <Autocomplete
           label="Name"
           placeholder="Enter debt name"
+          data={nameAutocomplete.suggestions}
           required
           {...form.getInputProps('name')}
         />
