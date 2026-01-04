@@ -296,10 +296,13 @@ const DebtTable = ({ debts: initialDebts, totalShown: initialTotalShown }: DebtT
 
   const fixedExpenseOptions = [
     { value: '', label: 'None' },
-    ...fixedExpenses.map((expense) => ({
-      value: expense.id.toString(),
-      label: `${expense.item} (${formatCurrency(expense.amount, expense.currency)})`,
-    })),
+    ...fixedExpenses
+      .slice()
+      .sort((a, b) => a.item.localeCompare(b.item, undefined, { sensitivity: 'base' }))
+      .map((expense) => ({
+        value: expense.id.toString(),
+        label: `${expense.item} (${formatCurrency(expense.amount, expense.currency)})`,
+      })),
   ];
 
   const createFields: FormField<DebtEntryCreate>[] = [
