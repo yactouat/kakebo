@@ -324,7 +324,79 @@ const ProjectTable = () => {
     },
   ];
 
-  const editFields: FormField<ProjectUpdate>[] = createFields;
+  const editFields: FormField<ProjectUpdate>[] = [
+    {
+      key: 'name',
+      render: (form) => (
+        <TextInput
+          label="Name"
+          placeholder="Enter project name"
+          required
+          {...form.getInputProps('name')}
+        />
+      ),
+    },
+    {
+      key: 'description',
+      render: (form) => (
+        <Textarea
+          label="Description (Optional)"
+          placeholder="Enter project description"
+          {...form.getInputProps('description')}
+        />
+      ),
+    },
+    {
+      key: 'target_amount',
+      render: (form) => (
+        <NumberInput
+          label="Target Amount"
+          placeholder="Enter target amount"
+          min={0}
+          step={0.01}
+          decimalScale={2}
+          required
+          {...form.getInputProps('target_amount')}
+        />
+      ),
+    },
+    {
+      key: 'status',
+      render: (form) => (
+        <Select
+          label="Status"
+          placeholder="Select status"
+          data={PROJECT_STATUSES}
+          value={form.values.status}
+          onChange={(value) => form.setFieldValue('status', value as ProjectStatus)}
+        />
+      ),
+    },
+    {
+      key: 'savings_account_id',
+      render: (form) => (
+        <Select
+          label="Linked Savings Account (Optional)"
+          placeholder="Select a savings account"
+          data={accountOptions}
+          value={form.values.savings_account_id?.toString() || ''}
+          onChange={(value) => form.setFieldValue('savings_account_id', value ? parseInt(value, 10) : null)}
+        />
+      ),
+    },
+    {
+      key: 'currency',
+      render: (form) => (
+        <Select
+          label="Currency"
+          placeholder="Select currency"
+          data={[{ value: 'EUR', label: 'EUR' }]}
+          value={form.values.currency || 'EUR'}
+          onChange={(value) => form.setFieldValue('currency', value || 'EUR')}
+        />
+      ),
+    },
+  ];
 
   return (
     <>

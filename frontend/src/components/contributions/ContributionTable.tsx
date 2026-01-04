@@ -228,7 +228,43 @@ const ContributionTable = ({ savingsAccountId }: ContributionTableProps) => {
     },
   ];
 
-  const editFields: FormField<ContributionUpdate>[] = createFields;
+  const editFields: FormField<ContributionUpdate>[] = [
+    {
+      key: 'amount',
+      render: (form) => (
+        <NumberInput
+          label="Amount"
+          placeholder="Enter amount"
+          min={0}
+          step={0.01}
+          decimalScale={2}
+          required
+          {...form.getInputProps('amount')}
+        />
+      ),
+    },
+    {
+      key: 'date',
+      render: (form) => (
+        <TextInput
+          label="Date"
+          type="date"
+          required
+          {...form.getInputProps('date')}
+        />
+      ),
+    },
+    {
+      key: 'notes',
+      render: (form) => (
+        <Textarea
+          label="Notes (Optional)"
+          placeholder="Enter notes"
+          {...form.getInputProps('notes')}
+        />
+      ),
+    },
+  ];
 
   return (
     <>

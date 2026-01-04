@@ -242,7 +242,55 @@ const SavingsAccountTable = ({ accounts: initialAccounts, totalShown: initialTot
     },
   ];
 
-  const editFields: FormField<SavingsAccountUpdate>[] = createFields;
+  const editFields: FormField<SavingsAccountUpdate>[] = [
+    {
+      key: 'name',
+      render: (form) => (
+        <TextInput
+          label="Name"
+          placeholder="Enter account name"
+          required
+          {...form.getInputProps('name')}
+        />
+      ),
+    },
+    {
+      key: 'initial_balance',
+      render: (form) => (
+        <NumberInput
+          label="Initial Balance"
+          placeholder="Enter initial balance"
+          min={0}
+          step={0.01}
+          decimalScale={2}
+          required
+          {...form.getInputProps('initial_balance')}
+        />
+      ),
+    },
+    {
+      key: 'currency',
+      render: (form) => (
+        <Select
+          label="Currency"
+          placeholder="Select currency"
+          data={[{ value: 'EUR', label: 'EUR' }]}
+          value={form.values.currency || 'EUR'}
+          onChange={(value) => form.setFieldValue('currency', value || 'EUR')}
+        />
+      ),
+    },
+    {
+      key: 'bank_institution',
+      render: (form) => (
+        <TextInput
+          label="Bank/Institution (Optional)"
+          placeholder="Enter bank or institution name"
+          {...form.getInputProps('bank_institution')}
+        />
+      ),
+    },
+  ];
 
   return (
     <>
