@@ -1,4 +1,4 @@
-import { Badge, Button, Group, NumberInput, Select, Textarea, TextInput } from '@mantine/core';
+import { Badge, Button, Group, NumberInput, Progress, Select, Textarea, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconPlus } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 
 import { EntryModal, type FormField } from '../shared/EntryModal';
 import { EntryTable, type TableColumn } from '../shared/EntryTable';
-import type { Project, ProjectStatus } from '../../models/Project';
+import type { Project, ProjectProgress, ProjectStatus } from '../../models/Project';
 import type { ProjectCreate, ProjectUpdate } from '../../dtos/project';
 import type { SavingsAccount } from '../../models/SavingsAccount';
 import { projectService } from '../../services/projectService';
@@ -23,9 +23,10 @@ const PROJECT_STATUSES: { value: ProjectStatus; label: string }[] = [
 ];
 
 const ProjectTable = () => {
-  const { notifyDataChange } = useAppStore();
+  const { notifyDataChange, dataChangeCounter } = useAppStore();
   const [data, setData] = useState<Project[]>([]);
   const [savingsAccounts, setSavingsAccounts] = useState<SavingsAccount[]>([]);
+  const [projectProgress, setProjectProgress] = useState<Map<number, ProjectProgress>>(new Map());
   const [loading, setLoading] = useState(false);
   const [createOpened, setCreateOpened] = useState(false);
   const [editOpened, setEditOpened] = useState(false);
@@ -72,6 +73,22 @@ const ProjectTable = () => {
 
       const fetchedData = await projectService.getAll(filters);
       setData(fetchedData);
+
+      // Fetch progress for projects with linked accounts
+      const progressMap = new Map<number, ProjectProgress>();
+      await Promise.all(
+        fetchedData
+          .filter((project) => project.savings_account_id !== null)
+          .map(async (project) => {
+            try {
+              const progress = await projectService.getProgress(project.id);
+              progressMap.set(project.id, progress);
+            } catch (error) {
+              console.error(`Failed to fetch progress for project ${project.id}:`, error);
+            }
+          })
+      );
+      setProjectProgress(progressMap);
     } catch (error) {
       notifications.show({
         title: 'Error',
@@ -94,7 +111,7 @@ const ProjectTable = () => {
 
   useEffect(() => {
     fetchProjects();
-  }, [statusFilter, accountFilter]);
+  }, [statusFilter, accountFilter, dataChangeCounter]);
 
   useEffect(() => {
     fetchSavingsAccounts();
@@ -237,6 +254,37 @@ const ProjectTable = () => {
         }
         const account = savingsAccounts.find((a) => a.id === project.savings_account_id);
         return account ? account.name : `Account #${project.savings_account_id}`;
+      },
+      sortable: false,
+    },
+    {
+      key: 'progress',
+      label: 'Progress',
+      render: (project) => {
+        if (!project.savings_account_id) {
+          return null;
+        }
+        const progress = projectProgress.get(project.id);
+        if (!progress) {
+          return <span style={{ color: '#999' }}>Loading...</span>;
+        }
+        const percentage = Math.min(100, Math.max(0, progress.progress_percentage));
+        return (
+          <Group gap="xs" align="center">
+            <Progress
+              value={percentage}
+              color={percentage >= 100 ? 'green' : 'blue'}
+              size="sm"
+              style={{ flex: 1 }}
+            />
+            <span style={{ fontSize: '0.875rem', minWidth: '60px', textAlign: 'right' }}>
+              {formatCurrency(progress.current_balance, project.currency)} / {formatCurrency(progress.target_amount, project.currency)}
+            </span>
+            <span style={{ fontSize: '0.875rem', minWidth: '45px', textAlign: 'right', color: '#666' }}>
+              ({percentage.toFixed(1)}%)
+            </span>
+          </Group>
+        );
       },
       sortable: false,
     },
