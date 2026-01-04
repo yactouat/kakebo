@@ -57,6 +57,15 @@ const NetWorthPage = () => {
 
         <Paper shadow="sm" p="md" withBorder>
           <Stack gap="xs">
+            <Text size="sm" c="dimmed">Total Savings</Text>
+            <Text size="xl" fw={700} c="green">
+              {loading ? 'Loading...' : error ? 'Error' : netWorthData ? formatCurrency(netWorthData.total_savings, 'EUR') : '-'}
+            </Text>
+          </Stack>
+        </Paper>
+
+        <Paper shadow="sm" p="md" withBorder>
+          <Stack gap="xs">
             <Text size="sm" c="dimmed">Total Debts</Text>
             <Text size="xl" fw={700} c="red">
               {loading ? 'Loading...' : error ? 'Error' : netWorthData ? formatCurrency(netWorthData.total_debts, 'EUR') : '-'}

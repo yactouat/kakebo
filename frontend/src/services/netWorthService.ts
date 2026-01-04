@@ -4,6 +4,7 @@ import { getApiBaseUrl } from '../utils/api';
 
 export interface NetWorthData {
   available_cash: number;
+  total_savings: number;
   total_debts: number;
   net_worth: number;
   debts: Debt[];
