@@ -75,4 +75,19 @@ export const projectService = {
     if (!result.data) throw new Error('No data returned from API');
     return result.data;
   },
+
+  async swapPriority(id: number, direction: 'up' | 'down'): Promise<Project> {
+    const response = await fetch(`${API_BASE_URL}/${id}/swap-priority?direction=${direction}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) {
+      if (response.status === 404) throw new Error(`Project with id ${id} not found`);
+      const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+      throw new Error(errorData.detail || `Failed to swap priority: ${response.statusText}`);
+    }
+    const result: APIResponse<Project> = await response.json();
+    if (!result.data) throw new Error('No data returned from API');
+    return result.data;
+  },
 };

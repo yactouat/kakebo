@@ -264,3 +264,75 @@ def update_project(project_id: int, entry_update: ProjectUpdate, existing: Dict[
             "updated_at": updated_at
         }
     return None
+
+
+def swap_project_priorities(project_id: int, direction: str) -> Optional[Dict[str, Any]]:
+    """Swap a project's priority with the adjacent project (up or down).
+    
+    Args:
+        project_id: The ID of the project to move
+        direction: Either 'up' (decrease priority) or 'down' (increase priority)
+    
+    Returns:
+        The updated project, or None if the swap couldn't be performed
+    """
+    if direction not in ['up', 'down']:
+        raise ValidationError("Direction must be 'up' or 'down'")
+    
+    # Get the current project
+    current_project = get_project_by_id(project_id)
+    if current_project is None:
+        raise ValidationError(f"Project with id {project_id} not found")
+    
+    current_priority = current_project.get("priority_order")
+    if current_priority is None:
+        raise ValidationError(f"Project {project_id} has no priority_order set")
+    
+    # Determine the target priority
+    if direction == 'up':
+        target_priority = current_priority - 1
+        if target_priority < 1:
+            raise ValidationError("Project is already at the highest priority")
+    else:  # direction == 'down'
+        target_priority = current_priority + 1
+    
+    # Find the project with the target priority
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, priority_order FROM projects WHERE priority_order = ?", (target_priority,))
+    adjacent_project = cursor.fetchone()
+    
+    if adjacent_project is None:
+        conn.close()
+        raise ValidationError(f"No project found with priority {target_priority}")
+    
+    adjacent_project_id = adjacent_project["id"]
+    
+    # Swap priorities atomically using a transaction
+    # Use a temporary priority value to avoid uniqueness conflicts
+    temp_priority = 1000000 + project_id  # Large number to avoid conflicts
+    
+    try:
+        # Move current project to temporary priority
+        cursor.execute("UPDATE projects SET priority_order = ?, updated_at = ? WHERE id = ?",
+                       (temp_priority, datetime.now().isoformat(), project_id))
+        
+        # Move adjacent project to current project's priority
+        cursor.execute("UPDATE projects SET priority_order = ?, updated_at = ? WHERE id = ?",
+                       (current_priority, datetime.now().isoformat(), adjacent_project_id))
+        
+        # Move current project to adjacent project's priority
+        cursor.execute("UPDATE projects SET priority_order = ?, updated_at = ? WHERE id = ?",
+                       (target_priority, datetime.now().isoformat(), project_id))
+        
+        conn.commit()
+        
+        # Return the updated current project
+        updated_project = get_project_by_id(project_id)
+        conn.close()
+        return updated_project
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        raise ValidationError(f"Failed to swap priorities: {str(e)}")

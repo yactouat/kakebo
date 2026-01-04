@@ -1,6 +1,6 @@
-import { Autocomplete, Badge, Button, Group, NumberInput, Progress, Select, Textarea } from '@mantine/core';
+import { Autocomplete, Badge, Button, Group, NumberInput, Progress, Select, Textarea, ActionIcon } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconPlus } from '@tabler/icons-react';
+import { IconPlus, IconChevronUp, IconChevronDown } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { useEffect, useState } from 'react';
 
@@ -235,6 +235,25 @@ const ProjectTable = () => {
     }
   };
 
+  const handleMovePriority = async (project: Project, direction: 'up' | 'down') => {
+    try {
+      await projectService.swapPriority(project.id, direction);
+      await fetchProjects();
+      notifyDataChange();
+      notifications.show({
+        title: 'Success',
+        message: `Project priority moved ${direction}`,
+        color: 'green',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: error instanceof Error ? error.message : `Failed to move project ${direction}`,
+        color: 'red',
+      });
+    }
+  };
+
   // Sort functionality
   const getValue = (entry: Project, column: string): any => {
     switch (column) {
@@ -246,6 +265,15 @@ const ProjectTable = () => {
         return entry.status;
       case 'priority_order':
         return entry.priority_order;
+      case 'progress':
+        if (!entry.savings_account_id) {
+          return -1; // Projects without linked accounts sort to the end
+        }
+        const progress = projectProgress.get(entry.id);
+        if (!progress) {
+          return -1; // Projects without progress data sort to the end
+        }
+        return progress.progress_percentage;
       default:
         return null;
     }
@@ -269,7 +297,46 @@ const ProjectTable = () => {
     {
       key: 'priority_order',
       label: 'Priority',
-      render: (project) => project.priority_order,
+      render: (project) => {
+        const minPriority = Math.min(...data.map(p => p.priority_order));
+        const maxPriority = Math.max(...data.map(p => p.priority_order));
+        const canMoveUp = project.priority_order > minPriority;
+        const canMoveDown = project.priority_order < maxPriority;
+        
+        return (
+          <Group gap="xs" align="center">
+            <span>{project.priority_order}</span>
+            <Group gap={2}>
+              <ActionIcon
+                variant="subtle"
+                color="blue"
+                size="sm"
+                disabled={!canMoveUp}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMovePriority(project, 'up');
+                }}
+                aria-label="Move up"
+              >
+                <IconChevronUp size={14} />
+              </ActionIcon>
+              <ActionIcon
+                variant="subtle"
+                color="blue"
+                size="sm"
+                disabled={!canMoveDown}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMovePriority(project, 'down');
+                }}
+                aria-label="Move down"
+              >
+                <IconChevronDown size={14} />
+              </ActionIcon>
+            </Group>
+          </Group>
+        );
+      },
       sortable: true,
     },
     {
@@ -289,18 +356,6 @@ const ProjectTable = () => {
       label: 'Status',
       render: (project) => <Badge color={getStatusColor(project.status)}>{project.status}</Badge>,
       sortable: true,
-    },
-    {
-      key: 'linked_account',
-      label: 'Linked Account',
-      render: (project) => {
-        if (!project.savings_account_id) {
-          return <span style={{ color: '#999' }}>None</span>;
-        }
-        const account = savingsAccounts.find((a) => a.id === project.savings_account_id);
-        return account ? account.name : `Account #${project.savings_account_id}`;
-      },
-      sortable: false,
     },
     {
       key: 'progress',
@@ -330,6 +385,18 @@ const ProjectTable = () => {
             </span>
           </Group>
         );
+      },
+      sortable: true,
+    },
+    {
+      key: 'linked_account',
+      label: 'Linked Account',
+      render: (project) => {
+        if (!project.savings_account_id) {
+          return <span style={{ color: '#999' }}>None</span>;
+        }
+        const account = savingsAccounts.find((a) => a.id === project.savings_account_id);
+        return account ? account.name : `Account #${project.savings_account_id}`;
       },
       sortable: false,
     },

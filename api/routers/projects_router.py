@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import ValidationError as PydanticValidationError
 from typing import List
 
@@ -11,7 +11,8 @@ from services.projects_services import (
     delete_project,
     get_all_projects,
     get_project_by_id,
-    update_project
+    update_project,
+    swap_project_priorities
 )
 
 router = APIRouter(prefix="/projects", tags=["projects"])
@@ -107,3 +108,25 @@ async def update_project_entry(project_id: int, entry_update: ProjectUpdate):
         raise HTTPException(status_code=422, detail=f"Validation error: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update project: {str(e)}")
+
+
+@router.post("/{project_id}/swap-priority", response_model=APIResponse[Project])
+async def swap_priority(project_id: int, direction: str = Query(..., description="Direction to move: 'up' or 'down'")):
+    """Swap a project's priority with an adjacent project.
+    
+    Args:
+        project_id: The ID of the project to move
+        direction: Either 'up' (decrease priority) or 'down' (increase priority)
+    """
+    if direction not in ['up', 'down']:
+        raise HTTPException(status_code=400, detail="Direction must be 'up' or 'down'")
+    
+    try:
+        updated = swap_project_priorities(project_id, direction)
+        if updated is None:
+            raise HTTPException(status_code=500, detail="Failed to swap priorities")
+        return APIResponse(data=Project(**updated), msg="Priority swapped successfully")
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to swap priorities: {str(e)}")
