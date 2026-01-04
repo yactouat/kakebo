@@ -1,4 +1,4 @@
-import { Autocomplete, Button, Group, NumberInput, Progress, Select, Textarea, TextInput } from '@mantine/core';
+import { Autocomplete, Button, Group, NumberInput, Progress, Select, Textarea } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconPlus } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
