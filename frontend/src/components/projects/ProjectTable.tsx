@@ -42,10 +42,12 @@ const ProjectTable = () => {
       status: 'Active',
       savings_account_id: null,
       currency: 'EUR',
+      priority_order: 1,
     },
     validate: {
       name: (value) => (value.trim() ? null : 'Name is required'),
       target_amount: (value) => (value >= 0 ? null : 'Target amount must be >= 0'),
+      priority_order: (value) => (value > 0 && Number.isInteger(value) ? null : 'Priority order must be a positive integer'),
     },
   });
 
@@ -57,10 +59,12 @@ const ProjectTable = () => {
       status: 'Active',
       savings_account_id: null,
       currency: 'EUR',
+      priority_order: 1,
     },
     validate: {
       name: (value) => (value === undefined || value.trim() ? null : 'Name is required'),
       target_amount: (value) => (value === undefined || value >= 0 ? null : 'Target amount must be >= 0'),
+      priority_order: (value) => (value === undefined || (value > 0 && Number.isInteger(value)) ? null : 'Priority order must be a positive integer'),
     },
   });
 
@@ -113,12 +117,27 @@ const ProjectTable = () => {
     fetchProjects();
   }, [statusFilter, accountFilter, dataChangeCounter]);
 
+  // Update create form default priority_order when data changes
+  useEffect(() => {
+    if (data.length > 0 && !createOpened) {
+      const maxPriority = Math.max(...data.map(p => p.priority_order));
+      createForm.setFieldValue('priority_order', maxPriority + 1);
+    }
+  }, [data, createOpened]);
+
   useEffect(() => {
     fetchSavingsAccounts();
   }, []);
 
   const handleCreate = async (values: ProjectCreate) => {
     try {
+      // Calculate default priority_order if not set (max + 1)
+      if (!values.priority_order || values.priority_order <= 0) {
+        const maxPriority = data.length > 0 
+          ? Math.max(...data.map(p => p.priority_order))
+          : 0;
+        values.priority_order = maxPriority + 1;
+      }
       await projectService.create(values);
       createForm.reset();
       await fetchProjects();
@@ -147,6 +166,7 @@ const ProjectTable = () => {
       status: project.status,
       savings_account_id: project.savings_account_id,
       currency: project.currency || 'EUR',
+      priority_order: project.priority_order,
     });
     setEditOpened(true);
   };
@@ -207,6 +227,8 @@ const ProjectTable = () => {
         return entry.target_amount;
       case 'status':
         return entry.status;
+      case 'priority_order':
+        return entry.priority_order;
       default:
         return null;
     }
@@ -227,6 +249,12 @@ const ProjectTable = () => {
   };
 
   const columns: TableColumn<Project>[] = [
+    {
+      key: 'priority_order',
+      label: 'Priority',
+      render: (project) => project.priority_order,
+      sortable: true,
+    },
     {
       key: 'name',
       label: 'Name',
@@ -299,6 +327,19 @@ const ProjectTable = () => {
   ];
 
   const createFields: FormField<ProjectCreate>[] = [
+    {
+      key: 'priority_order',
+      render: (form) => (
+        <NumberInput
+          label="Priority Order"
+          placeholder="Enter priority order"
+          min={1}
+          step={1}
+          required
+          {...form.getInputProps('priority_order')}
+        />
+      ),
+    },
     {
       key: 'name',
       render: (form) => (
@@ -373,6 +414,19 @@ const ProjectTable = () => {
   ];
 
   const editFields: FormField<ProjectUpdate>[] = [
+    {
+      key: 'priority_order',
+      render: (form) => (
+        <NumberInput
+          label="Priority Order"
+          placeholder="Enter priority order"
+          min={1}
+          step={1}
+          required
+          {...form.getInputProps('priority_order')}
+        />
+      ),
+    },
     {
       key: 'name',
       render: (form) => (

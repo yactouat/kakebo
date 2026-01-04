@@ -7,6 +7,7 @@ export interface ProjectCreate {
   status: ProjectStatus;
   savings_account_id?: number | null;
   currency: string;
+  priority_order: number;
 }
 
 export interface ProjectUpdate {
@@ -16,4 +17,5 @@ export interface ProjectUpdate {
   status?: ProjectStatus;
   savings_account_id?: number | null;
   currency?: string;
+  priority_order?: number;
 }

@@ -8,6 +8,7 @@ export interface Project {
   status: ProjectStatus;
   savings_account_id?: number | null;
   currency: string;
+  priority_order: number;
   created_at: string;
   updated_at?: string | null;
 }

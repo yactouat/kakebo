@@ -71,15 +71,21 @@ def create_project(entry: ProjectCreate) -> Dict[str, Any]:
         if account is None:
             raise ValidationError(f"Savings account with id {entry.savings_account_id} not found")
 
+    # Validate priority_order uniqueness
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM projects WHERE priority_order = ?", (entry.priority_order,))
+    if cursor.fetchone() is not None:
+        conn.close()
+        raise ValidationError(f"Priority order {entry.priority_order} is already in use. Each project must have a unique priority order.")
+
     # Currency defaults to EUR in the DTO, but ensure it's set
     currency = getattr(entry, 'currency', 'EUR') or 'EUR'
 
-    conn = get_connection()
-    cursor = conn.cursor()
     created_at = datetime.now().isoformat()
     cursor.execute(
-        "INSERT INTO projects (name, description, target_amount, status, savings_account_id, currency, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (entry.name, entry.description, entry.target_amount, entry.status, entry.savings_account_id, currency, created_at)
+        "INSERT INTO projects (name, description, target_amount, status, savings_account_id, currency, priority_order, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (entry.name, entry.description, entry.target_amount, entry.status, entry.savings_account_id, currency, entry.priority_order, created_at)
     )
     project_id = cursor.lastrowid
     conn.commit()
@@ -92,6 +98,7 @@ def create_project(entry: ProjectCreate) -> Dict[str, Any]:
         "status": entry.status,
         "savings_account_id": entry.savings_account_id,
         "currency": currency,
+        "priority_order": entry.priority_order,
         "created_at": created_at,
         "updated_at": None
     }
@@ -122,7 +129,7 @@ def get_all_projects(status: str | None = None, savings_account_id: int | None =
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
-    query = "SELECT id, name, description, target_amount, status, savings_account_id, currency, created_at, updated_at FROM projects"
+    query = "SELECT id, name, description, target_amount, status, savings_account_id, currency, priority_order, created_at, updated_at FROM projects"
     conditions = []
     params = []
 
@@ -139,14 +146,21 @@ def get_all_projects(status: str | None = None, savings_account_id: int | None =
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
 
-    query += " ORDER BY id DESC"
+    query += " ORDER BY priority_order ASC"
 
     cursor.execute(query, params)
     entries = [dict(row) for row in cursor.fetchall()]
     # Ensure currency defaults to EUR for existing entries without currency
+    # Ensure priority_order defaults to id if NULL (shouldn't happen after migration, but handle edge cases)
     for entry in entries:
         if 'currency' not in entry or entry['currency'] is None:
             entry['currency'] = 'EUR'
+        if 'priority_order' not in entry or entry['priority_order'] is None:
+            # Fix NULL priority_order in database and use id as fallback
+            entry['priority_order'] = entry['id']
+            cursor.execute("UPDATE projects SET priority_order = ? WHERE id = ?", (entry['id'], entry['id']))
+    if entries:
+        conn.commit()
     conn.close()
     return entries
 
@@ -156,15 +170,22 @@ def get_project_by_id(project_id: int) -> Optional[Dict[str, Any]]:
     conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT id, name, description, target_amount, status, savings_account_id, currency, created_at, updated_at FROM projects WHERE id = ?", (project_id,))
+    cursor.execute("SELECT id, name, description, target_amount, status, savings_account_id, currency, priority_order, created_at, updated_at FROM projects WHERE id = ?", (project_id,))
     row = cursor.fetchone()
-    conn.close()
     if row:
         entry = dict(row)
         # Ensure currency defaults to EUR for existing entries without currency
+        # Ensure priority_order defaults to id if NULL (shouldn't happen after migration, but handle edge cases)
         if 'currency' not in entry or entry['currency'] is None:
             entry['currency'] = 'EUR'
+        if 'priority_order' not in entry or entry['priority_order'] is None:
+            # Fix NULL priority_order in database and use id as fallback
+            entry['priority_order'] = entry['id']
+            cursor.execute("UPDATE projects SET priority_order = ? WHERE id = ?", (entry['id'], entry['id']))
+            conn.commit()
+        conn.close()
         return entry
+    conn.close()
     return None
 
 
@@ -185,6 +206,7 @@ def update_project(project_id: int, entry_update: ProjectUpdate, existing: Dict[
     target_amount = entry_update.target_amount if entry_update.target_amount is not None else existing["target_amount"]
     status = entry_update.status if entry_update.status is not None else existing["status"]
     savings_account_id = entry_update.savings_account_id if entry_update.savings_account_id is not None else existing.get("savings_account_id")
+    priority_order = entry_update.priority_order if entry_update.priority_order is not None else existing.get("priority_order")
 
     # Validate target_amount
     if target_amount < 0:
@@ -199,6 +221,21 @@ def update_project(project_id: int, entry_update: ProjectUpdate, existing: Dict[
         if account is None:
             raise ValidationError(f"Savings account with id {savings_account_id} not found")
 
+    # Validate priority_order uniqueness if it's being changed
+    # Check if priority_order is provided in the update and differs from existing
+    if entry_update.priority_order is not None:
+        new_priority_order = entry_update.priority_order
+        existing_priority_order = existing.get("priority_order")
+        # Only validate uniqueness if the value is actually changing
+        if new_priority_order != existing_priority_order:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT id FROM projects WHERE priority_order = ? AND id != ?", (new_priority_order, project_id))
+            if cursor.fetchone() is not None:
+                conn.close()
+                raise ValidationError(f"Priority order {new_priority_order} is already in use. Each project must have a unique priority order.")
+            conn.close()
+
     # Default to EUR if currency is not provided in update or existing entry
     existing_currency = existing.get("currency", "EUR")
     currency = entry_update.currency if entry_update.currency is not None else existing_currency
@@ -207,8 +244,8 @@ def update_project(project_id: int, entry_update: ProjectUpdate, existing: Dict[
     cursor = conn.cursor()
     updated_at = datetime.now().isoformat()
     cursor.execute(
-        "UPDATE projects SET name = ?, description = ?, target_amount = ?, status = ?, savings_account_id = ?, currency = ?, updated_at = ? WHERE id = ?",
-        (name, description, target_amount, status, savings_account_id, currency, updated_at, project_id)
+        "UPDATE projects SET name = ?, description = ?, target_amount = ?, status = ?, savings_account_id = ?, currency = ?, priority_order = ?, updated_at = ? WHERE id = ?",
+        (name, description, target_amount, status, savings_account_id, currency, priority_order, updated_at, project_id)
     )
     conn.commit()
     updated = cursor.rowcount > 0
@@ -222,6 +259,7 @@ def update_project(project_id: int, entry_update: ProjectUpdate, existing: Dict[
             "status": status,
             "savings_account_id": savings_account_id,
             "currency": currency,
+            "priority_order": priority_order,
             "created_at": existing.get("created_at", datetime.now().isoformat()),
             "updated_at": updated_at
         }

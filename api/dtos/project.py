@@ -11,8 +11,9 @@ class ProjectCreate(BaseModel):
     status: str = "Active"
     savings_account_id: int | None = None
     currency: str = "EUR"
+    priority_order: int
 
-    validate_no_null_values = create_no_null_validator(["name", "target_amount", "currency", "status"])
+    validate_no_null_values = create_no_null_validator(["name", "target_amount", "currency", "status", "priority_order"])
     validate_target_amount = field_validator("target_amount")(validate_amount)
 
 
@@ -24,6 +25,7 @@ class Project(BaseModel):
     status: str
     savings_account_id: int | None = None
     currency: str = "EUR"
+    priority_order: int
     created_at: str
     updated_at: str | None = None
 
@@ -35,6 +37,7 @@ class ProjectUpdate(BaseModel):
     status: str | None = None
     savings_account_id: int | None = None
     currency: str | None = None
+    priority_order: int | None = None
 
     validate_no_null_values = create_no_null_validator(["name", "target_amount", "currency", "status"])
     validate_target_amount = field_validator("target_amount")(validate_amount)
