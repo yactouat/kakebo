@@ -58,6 +58,10 @@ def create_project(entry: ProjectCreate) -> Dict[str, Any]:
 
     The ProjectCreate DTO is validated automatically by Pydantic,
     ensuring no None values are present.
+    
+    When a new project is inserted with priority_order X, all existing projects
+    with priority_order >= X will have their priority_order incremented by 1
+    to make room for the new project.
     """
     if entry.target_amount < 0:
         raise ValidationError("Project target_amount cannot be negative")
@@ -71,13 +75,27 @@ def create_project(entry: ProjectCreate) -> Dict[str, Any]:
         if account is None:
             raise ValidationError(f"Savings account with id {entry.savings_account_id} not found")
 
-    # Validate priority_order uniqueness
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id FROM projects WHERE priority_order = ?", (entry.priority_order,))
-    if cursor.fetchone() is not None:
-        conn.close()
-        raise ValidationError(f"Priority order {entry.priority_order} is already in use. Each project must have a unique priority order.")
+    
+    # Find all projects with priority_order >= the new project's priority_order
+    # These need to be shifted down (incremented by 1)
+    # We do this in descending order to avoid uniqueness constraint violations
+    cursor.execute(
+        "SELECT id, priority_order FROM projects WHERE priority_order >= ? ORDER BY priority_order DESC",
+        (entry.priority_order,)
+    )
+    projects_to_shift = cursor.fetchall()
+    
+    # Shift all affected projects down (increment their priority_order by 1)
+    updated_at = datetime.now().isoformat()
+    for project_row in projects_to_shift:
+        project_id_to_shift = project_row[0]
+        current_priority = project_row[1]
+        cursor.execute(
+            "UPDATE projects SET priority_order = ?, updated_at = ? WHERE id = ?",
+            (current_priority + 1, updated_at, project_id_to_shift)
+        )
 
     # Currency defaults to EUR in the DTO, but ensure it's set
     currency = getattr(entry, 'currency', 'EUR') or 'EUR'
@@ -221,20 +239,17 @@ def update_project(project_id: int, entry_update: ProjectUpdate, existing: Dict[
         if account is None:
             raise ValidationError(f"Savings account with id {savings_account_id} not found")
 
-    # Validate priority_order uniqueness if it's being changed
-    # Check if priority_order is provided in the update and differs from existing
+    # Handle priority_order changes with automatic shifting
+    existing_priority_order = existing.get("priority_order")
+    priority_changed = False
+    new_priority_order = None
+    
     if entry_update.priority_order is not None:
         new_priority_order = entry_update.priority_order
-        existing_priority_order = existing.get("priority_order")
-        # Only validate uniqueness if the value is actually changing
+        # Only process if the value is actually changing
         if new_priority_order != existing_priority_order:
-            conn = get_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT id FROM projects WHERE priority_order = ? AND id != ?", (new_priority_order, project_id))
-            if cursor.fetchone() is not None:
-                conn.close()
-                raise ValidationError(f"Priority order {new_priority_order} is already in use. Each project must have a unique priority order.")
-            conn.close()
+            priority_changed = True
+            priority_order = new_priority_order
 
     # Default to EUR if currency is not provided in update or existing entry
     existing_currency = existing.get("currency", "EUR")
@@ -243,6 +258,41 @@ def update_project(project_id: int, entry_update: ProjectUpdate, existing: Dict[
     conn = get_connection()
     cursor = conn.cursor()
     updated_at = datetime.now().isoformat()
+    
+    # If priority is being changed, shift other projects accordingly
+    if priority_changed:
+        if new_priority_order < existing_priority_order:
+            # Moving to higher priority (lower number): shift projects in the gap down
+            # Projects with priority >= new_priority and < existing_priority need to shift down
+            cursor.execute(
+                "SELECT id, priority_order FROM projects WHERE priority_order >= ? AND priority_order < ? AND id != ? ORDER BY priority_order DESC",
+                (new_priority_order, existing_priority_order, project_id)
+            )
+            projects_to_shift = cursor.fetchall()
+            for project_row in projects_to_shift:
+                project_id_to_shift = project_row[0]
+                current_priority = project_row[1]
+                cursor.execute(
+                    "UPDATE projects SET priority_order = ?, updated_at = ? WHERE id = ?",
+                    (current_priority + 1, updated_at, project_id_to_shift)
+                )
+        elif new_priority_order > existing_priority_order:
+            # Moving to lower priority (higher number): shift projects in the gap up
+            # Projects with priority > existing_priority and <= new_priority need to shift up
+            cursor.execute(
+                "SELECT id, priority_order FROM projects WHERE priority_order > ? AND priority_order <= ? AND id != ? ORDER BY priority_order ASC",
+                (existing_priority_order, new_priority_order, project_id)
+            )
+            projects_to_shift = cursor.fetchall()
+            for project_row in projects_to_shift:
+                project_id_to_shift = project_row[0]
+                current_priority = project_row[1]
+                cursor.execute(
+                    "UPDATE projects SET priority_order = ?, updated_at = ? WHERE id = ?",
+                    (current_priority - 1, updated_at, project_id_to_shift)
+                )
+    
+    # Update the current project
     cursor.execute(
         "UPDATE projects SET name = ?, description = ?, target_amount = ?, status = ?, savings_account_id = ?, currency = ?, priority_order = ?, updated_at = ? WHERE id = ?",
         (name, description, target_amount, status, savings_account_id, currency, priority_order, updated_at, project_id)
