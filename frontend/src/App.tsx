@@ -19,6 +19,8 @@ import Layout from './components/Layout';
 import DiagramsPage from './pages/DiagramsPage';
 import LedgerPage from './pages/LedgerPage';
 import NetWorthPage from './pages/NetWorthPage';
+import ProjectsPage from './pages/ProjectsPage';
+import SavingsAccountsPage from './pages/SavingsAccountsPage';
 
 const App = () => {
   return (
@@ -30,6 +32,8 @@ const App = () => {
           <Route element={<DiagramsPage />} path="/diagrams" />
           <Route element={<LedgerPage />} path="/ledger" />
           <Route element={<NetWorthPage />} path="/net-worth" />
+          <Route element={<ProjectsPage />} path="/projects" />
+          <Route element={<SavingsAccountsPage />} path="/savings-accounts" />
         </Routes>
       </Layout>
     </MantineProvider>

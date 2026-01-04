@@ -258,6 +258,69 @@ def init_db():
         cursor.execute("DROP TABLE IF EXISTS projects")
         print("Migration: Dropped projects table")
 
+    # Create NEW savings_accounts table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS savings_accounts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            initial_balance REAL NOT NULL DEFAULT 0,
+            currency TEXT NOT NULL DEFAULT 'EUR',
+            bank_institution TEXT,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT
+        )
+    """)
+
+    # Create NEW contributions table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS contributions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            savings_account_id INTEGER NOT NULL,
+            amount REAL NOT NULL,
+            date TEXT NOT NULL,
+            notes TEXT,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT,
+            FOREIGN KEY (savings_account_id) REFERENCES savings_accounts(id) ON DELETE CASCADE
+        )
+    """)
+
+    # Create indexes for contributions
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_contributions_savings_account_id
+        ON contributions(savings_account_id)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_contributions_date
+        ON contributions(date)
+    """)
+
+    # Create NEW projects table with different schema
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS projects (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT,
+            target_amount REAL NOT NULL,
+            status TEXT NOT NULL DEFAULT 'Active',
+            savings_account_id INTEGER,
+            currency TEXT NOT NULL DEFAULT 'EUR',
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT,
+            FOREIGN KEY (savings_account_id) REFERENCES savings_accounts(id) ON DELETE SET NULL
+        )
+    """)
+
+    # Create indexes for projects
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_projects_status
+        ON projects(status)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_projects_savings_account_id
+        ON projects(savings_account_id)
+    """)
+
     conn.commit()
     conn.close()
     print(f"Database initialized: {DB_PATH}")
