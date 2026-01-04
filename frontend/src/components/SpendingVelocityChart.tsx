@@ -54,18 +54,19 @@ const SpendingVelocityChart = () => {
         });
 
         // Build data array only up to the current day (or all days for past months)
+        // Start from day 0 to ensure proper chart rendering at the beginning
         const data: DailySpendingData[] = [];
         let cumulativeTotal = 0;
 
-        for (let day = 1; day <= maxDay; day++) {
+        for (let day = 0; day <= maxDay; day++) {
           const dailyAmount = dailySpendingMap.get(day) || 0;
           cumulativeTotal += dailyAmount;
-          
+
           // Calculate day of week
           const date = new Date(selectedYear, selectedMonth - 1, day);
           const dayOfWeekNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
           const dayOfWeek = dayOfWeekNames[date.getDay()];
-          
+
           data.push({
             day,
             daily: dailyAmount,
@@ -105,9 +106,11 @@ const SpendingVelocityChart = () => {
   // Custom tooltip that includes day of week
   const CustomTooltip = (props: any) => {
     const day = typeof props.label === 'number' ? props.label : parseInt(String(props.label), 10);
+    // Don't show tooltip for day 0 (it's just an anchor point)
+    if (day === 0) return null;
     const dataPoint = chartData.find(d => d.day === day);
     let enhancedLabel = props.label;
-    
+
     if (dataPoint && dataPoint.dayOfWeek) {
       enhancedLabel = `Day ${day} (${dataPoint.dayOfWeek})`;
     } else if (selectedMonth && selectedYear && !isNaN(day)) {
@@ -117,7 +120,7 @@ const SpendingVelocityChart = () => {
       const dayOfWeek = dayOfWeekNames[date.getDay()];
       enhancedLabel = `Day ${day} (${dayOfWeek})`;
     }
-    
+
     return (
       <CurrencyTooltip
         {...props}
@@ -145,6 +148,8 @@ const SpendingVelocityChart = () => {
           tickFormatter: (value) => {
             // Handle both number and string values
             const day = typeof value === 'number' ? value : parseInt(String(value), 10);
+            // Don't show day 0 on x-axis (it's just an anchor point)
+            if (day === 0) return '';
             const dataPoint = chartData.find(d => d.day === day);
             if (dataPoint && dataPoint.dayOfWeek) {
               return `${day} (${dataPoint.dayOfWeek})`;
