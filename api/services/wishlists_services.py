@@ -71,7 +71,7 @@ def get_all_wishlists(search: str | None = None) -> List[Dict[str, Any]]:
 
     query = """
         SELECT w.id, w.name, w.description, w.created_at, w.updated_at,
-               COUNT(wi.id) as item_count
+               COUNT(CASE WHEN wi.purchased = 0 THEN wi.id END) as item_count
         FROM wishlists w
         LEFT JOIN wishlist_items wi ON w.id = wi.wishlist_id
     """
@@ -106,7 +106,7 @@ def get_wishlist_by_id(wishlist_id: int) -> Optional[Dict[str, Any]]:
     cursor.execute(
         """
         SELECT w.id, w.name, w.description, w.created_at, w.updated_at,
-               COUNT(wi.id) as item_count
+               COUNT(CASE WHEN wi.purchased = 0 THEN wi.id END) as item_count
         FROM wishlists w
         LEFT JOIN wishlist_items wi ON w.id = wi.wishlist_id
         WHERE w.id = ?
