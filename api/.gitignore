@@ -12,3 +12,5 @@ build/
 dist/
 env/
 venv/
+uploads/*
+!uploads/.gitkeep

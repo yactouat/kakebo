@@ -21,6 +21,8 @@ import LedgerPage from './pages/LedgerPage';
 import NetWorthPage from './pages/NetWorthPage';
 import ProjectsPage from './pages/ProjectsPage';
 import SavingsAccountsPage from './pages/SavingsAccountsPage';
+import WishlistDetailPage from './pages/WishlistDetailPage';
+import WishlistsPage from './pages/WishlistsPage';
 
 const App = () => {
   return (
@@ -34,6 +36,8 @@ const App = () => {
           <Route element={<NetWorthPage />} path="/net-worth" />
           <Route element={<ProjectsPage />} path="/projects" />
           <Route element={<SavingsAccountsPage />} path="/savings-accounts" />
+          <Route element={<WishlistsPage />} path="/wishlists" />
+          <Route element={<WishlistDetailPage />} path="/wishlists/:id" />
         </Routes>
       </Layout>
     </MantineProvider>

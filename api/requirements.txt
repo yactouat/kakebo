@@ -5,4 +5,7 @@ google-auth-oauthlib
 pydantic
 python-dotenv
 uvicorn[standard]
+httpx
+beautifulsoup4
+python-multipart
 
