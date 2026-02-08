@@ -1,4 +1,4 @@
-import { Autocomplete, Button, Group, NumberInput, Progress, Select, Textarea } from '@mantine/core';
+import { Autocomplete, Button, Checkbox, Group, NumberInput, Progress, Select, Textarea } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconPlus } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
@@ -31,6 +31,7 @@ const DebtTable = ({ debts: initialDebts, totalShown: initialTotalShown }: DebtT
   const [editingDebt, setEditingDebt] = useState<Debt | null>(null);
   const [fixedExpenses, setFixedExpenses] = useState<FixedExpenseEntry[]>([]);
   const [fixedExpensesLoading, setFixedExpensesLoading] = useState(false);
+  const [hidePaidDebts, setHidePaidDebts] = useState(true);
   const nameAutocomplete = useAutocomplete({ entity: 'debt_entries', field: 'name' });
   const notesAutocomplete = useAutocomplete({ entity: 'debt_entries', field: 'notes' });
 
@@ -238,7 +239,11 @@ const DebtTable = ({ debts: initialDebts, totalShown: initialTotalShown }: DebtT
 
   const { sortedData, sortState, handleSort } = useTableSort('debtTable', data, getValue);
 
-  const totalShown = initialTotalShown ?? sortedData.reduce((sum, debt) => sum + debt.current_balance, 0);
+  const displayedData = hidePaidDebts ? sortedData.filter((d) => d.current_balance > 0) : sortedData;
+  const totalShown =
+    initialTotalShown !== undefined && !hidePaidDebts
+      ? initialTotalShown
+      : displayedData.reduce((sum, debt) => sum + debt.current_balance, 0);
 
   const columns: TableColumn<Debt>[] = [
     {
@@ -464,6 +469,11 @@ const DebtTable = ({ debts: initialDebts, totalShown: initialTotalShown }: DebtT
   return (
     <>
       <Group justify="space-between" mb="md">
+        <Checkbox
+          checked={hidePaidDebts}
+          label="Hide paid debts"
+          onChange={(event) => setHidePaidDebts(event.currentTarget.checked)}
+        />
         <Button
           leftSection={<IconPlus size={16} />}
           onClick={() => setCreateOpened(true)}
@@ -474,7 +484,7 @@ const DebtTable = ({ debts: initialDebts, totalShown: initialTotalShown }: DebtT
 
       <EntryTable
         columns={columns}
-        data={sortedData}
+        data={displayedData}
         emptyMessage="No debts available"
         loading={loading}
         onDelete={handleDelete}
