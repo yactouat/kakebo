@@ -102,7 +102,7 @@ export const wishlistItemService = {
     return result.data;
   },
 
-  async getAll(wishlistId: number, showPurchased: boolean = true): Promise<WishlistItem[]> {
+  async getAll(wishlistId: number, showPurchased: boolean = false): Promise<WishlistItem[]> {
     const params = new URLSearchParams();
     params.append('wishlist_id', wishlistId.toString());
     params.append('show_purchased', showPurchased.toString());

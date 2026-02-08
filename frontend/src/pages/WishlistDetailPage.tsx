@@ -31,7 +31,7 @@ const WishlistDetailPage = () => {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch] = useDebouncedValue(searchQuery, 300);
-  const [showPurchased, setShowPurchased] = useState(true);
+  const [showPurchased, setShowPurchased] = useState(false);
   const [sizeableThreshold, setSizeableThreshold] = useState<number>(0);
   const [sortColumn, setSortColumn] = useState<SortColumn>('priority');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');

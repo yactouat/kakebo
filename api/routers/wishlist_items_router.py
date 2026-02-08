@@ -143,7 +143,7 @@ async def export_to_project(item_id: int):
 @router.get("", response_model=APIResponse[List[WishlistItem]])
 async def get_wishlist_items(
     wishlist_id: int = Query(..., description="Wishlist ID to filter by"),
-    show_purchased: bool = Query(True, description="Include purchased items"),
+    show_purchased: bool = Query(False, description="Include purchased items"),
 ):
     """Get all items for a wishlist."""
     try:

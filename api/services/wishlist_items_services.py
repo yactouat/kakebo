@@ -281,7 +281,7 @@ def export_item_to_project(item_id: int) -> Dict[str, Any]:
 
 
 def get_all_wishlist_items(
-    wishlist_id: int, show_purchased: bool = True
+    wishlist_id: int, show_purchased: bool = False
 ) -> List[Dict[str, Any]]:
     """Get all items for a wishlist.
 
