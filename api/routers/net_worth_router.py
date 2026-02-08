@@ -22,7 +22,7 @@ async def get_net_worth(month: str):
     Returns:
         Dictionary containing:
         - available_cash: Available cash for the month
-        - total_savings: Sum of all savings account initial_balance values
+        - total_savings: Sum of all savings account base_balance values (snapshot when added; use contributions for changes)
         - total_debts: Sum of all debt current_balance values (adjusted for linked payments)
         - net_worth: available_cash + total_savings - total_debts
         - debts: Array of debt entries with adjusted balances
@@ -34,7 +34,7 @@ async def get_net_worth(month: str):
         
         # Get all savings accounts and sum their balances
         savings_accounts = get_all_savings_accounts()
-        total_savings = sum(account["initial_balance"] for account in savings_accounts)
+        total_savings = sum(account["base_balance"] for account in savings_accounts)
         
         # Get debt entries with monthly reduction applied
         debts = get_debt_entries_with_monthly_reduction(month)

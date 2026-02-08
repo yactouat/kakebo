@@ -1,13 +1,14 @@
 export interface SavingsAccountCreate {
   name: string;
-  initial_balance: number;
+  /** Snapshot of your real-world account balance when you first add the account. Track future changes via contributions. */
+  base_balance: number;
   currency: string;
   bank_institution?: string | null;
 }
 
 export interface SavingsAccountUpdate {
   name?: string;
-  initial_balance?: number;
+  base_balance?: number;
   currency?: string;
   bank_institution?: string | null;
 }

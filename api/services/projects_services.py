@@ -14,7 +14,7 @@ def calculate_project_progress(project_id: int) -> Dict[str, Any]:
     """Calculate and return project progress.
 
     Progress is calculated as: current_balance / target_amount
-    where current_balance = initial_balance + SUM(contributions)
+    where current_balance = base_balance + SUM(contributions)
 
     Args:
         project_id: The ID of the project
@@ -32,8 +32,8 @@ def calculate_project_progress(project_id: int) -> Dict[str, Any]:
     if project.get("savings_account_id") is not None:
         account = get_savings_account_by_id(project["savings_account_id"])
         if account is not None:
-            # Start with initial balance
-            current_balance = account["initial_balance"]
+            # Start with base balance (snapshot when account was added)
+            current_balance = account["base_balance"]
 
             # Add all contributions
             contributions = get_all_contributions(account["id"])

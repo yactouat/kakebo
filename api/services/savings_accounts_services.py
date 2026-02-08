@@ -13,8 +13,8 @@ def create_savings_account(entry: SavingsAccountCreate) -> Dict[str, Any]:
     The SavingsAccountCreate DTO is validated automatically by Pydantic,
     ensuring no None values are present.
     """
-    if entry.initial_balance < 0:
-        raise ValidationError("Savings account initial_balance cannot be negative")
+    if entry.base_balance < 0:
+        raise ValidationError("Savings account base_balance cannot be negative")
 
     # Currency defaults to EUR in the DTO, but ensure it's set
     currency = getattr(entry, 'currency', 'EUR') or 'EUR'
@@ -23,8 +23,8 @@ def create_savings_account(entry: SavingsAccountCreate) -> Dict[str, Any]:
     cursor = conn.cursor()
     created_at = datetime.now().isoformat()
     cursor.execute(
-        "INSERT INTO savings_accounts (name, initial_balance, currency, bank_institution, created_at) VALUES (?, ?, ?, ?, ?)",
-        (entry.name, entry.initial_balance, currency, entry.bank_institution, created_at)
+        "INSERT INTO savings_accounts (name, base_balance, currency, bank_institution, created_at) VALUES (?, ?, ?, ?, ?)",
+        (entry.name, entry.base_balance, currency, entry.bank_institution, created_at)
     )
     account_id = cursor.lastrowid
     conn.commit()
@@ -32,7 +32,7 @@ def create_savings_account(entry: SavingsAccountCreate) -> Dict[str, Any]:
     return {
         "id": account_id,
         "name": entry.name,
-        "initial_balance": entry.initial_balance,
+        "base_balance": entry.base_balance,
         "currency": currency,
         "bank_institution": entry.bank_institution,
         "created_at": created_at,
@@ -56,7 +56,7 @@ def get_all_savings_accounts() -> List[Dict[str, Any]]:
     conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT id, name, initial_balance, currency, bank_institution, created_at, updated_at FROM savings_accounts ORDER BY id DESC")
+    cursor.execute("SELECT id, name, base_balance, currency, bank_institution, created_at, updated_at FROM savings_accounts ORDER BY id DESC")
     entries = [dict(row) for row in cursor.fetchall()]
     # Ensure currency defaults to EUR for existing entries without currency
     for entry in entries:
@@ -71,7 +71,7 @@ def get_savings_account_by_id(account_id: int) -> Optional[Dict[str, Any]]:
     conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT id, name, initial_balance, currency, bank_institution, created_at, updated_at FROM savings_accounts WHERE id = ?", (account_id,))
+    cursor.execute("SELECT id, name, base_balance, currency, bank_institution, created_at, updated_at FROM savings_accounts WHERE id = ?", (account_id,))
     row = cursor.fetchone()
     conn.close()
     if row:
@@ -96,11 +96,11 @@ def update_savings_account(account_id: int, entry_update: SavingsAccountUpdate, 
     """
     # Use provided values or keep existing ones
     name = entry_update.name if entry_update.name is not None else existing["name"]
-    initial_balance = entry_update.initial_balance if entry_update.initial_balance is not None else existing["initial_balance"]
+    base_balance = entry_update.base_balance if entry_update.base_balance is not None else existing["base_balance"]
 
-    # Validate initial_balance
-    if initial_balance < 0:
-        raise ValidationError("Savings account initial_balance cannot be negative")
+    # Validate base_balance
+    if base_balance < 0:
+        raise ValidationError("Savings account base_balance cannot be negative")
 
     # Default to EUR if currency is not provided in update or existing entry
     existing_currency = existing.get("currency", "EUR")
@@ -113,8 +113,8 @@ def update_savings_account(account_id: int, entry_update: SavingsAccountUpdate, 
     cursor = conn.cursor()
     updated_at = datetime.now().isoformat()
     cursor.execute(
-        "UPDATE savings_accounts SET name = ?, initial_balance = ?, currency = ?, bank_institution = ?, updated_at = ? WHERE id = ?",
-        (name, initial_balance, currency, bank_institution, updated_at, account_id)
+        "UPDATE savings_accounts SET name = ?, base_balance = ?, currency = ?, bank_institution = ?, updated_at = ? WHERE id = ?",
+        (name, base_balance, currency, bank_institution, updated_at, account_id)
     )
     conn.commit()
     updated = cursor.rowcount > 0
@@ -123,7 +123,7 @@ def update_savings_account(account_id: int, entry_update: SavingsAccountUpdate, 
         return {
             "id": account_id,
             "name": name,
-            "initial_balance": initial_balance,
+            "base_balance": base_balance,
             "currency": currency,
             "bank_institution": bank_institution,
             "created_at": existing.get("created_at", datetime.now().isoformat()),

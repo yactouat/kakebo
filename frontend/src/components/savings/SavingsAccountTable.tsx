@@ -32,26 +32,26 @@ const SavingsAccountTable = ({ accounts: initialAccounts, totalShown: initialTot
   const createForm = useForm<SavingsAccountCreate>({
     initialValues: {
       name: '',
-      initial_balance: 0,
+      base_balance: 0,
       currency: 'EUR',
       bank_institution: null,
     },
     validate: {
       name: (value) => (value.trim() ? null : 'Name is required'),
-      initial_balance: (value) => (value >= 0 ? null : 'Initial balance must be >= 0'),
+      base_balance: (value) => (value >= 0 ? null : 'Base balance must be >= 0'),
     },
   });
 
   const editForm = useForm<SavingsAccountUpdate>({
     initialValues: {
       name: '',
-      initial_balance: 0,
+      base_balance: 0,
       currency: 'EUR',
       bank_institution: null,
     },
     validate: {
       name: (value) => (value === undefined || value.trim() ? null : 'Name is required'),
-      initial_balance: (value) => (value === undefined || value >= 0 ? null : 'Initial balance must be >= 0'),
+      base_balance: (value) => (value === undefined || value >= 0 ? null : 'Base balance must be >= 0'),
     },
   });
 
@@ -109,7 +109,7 @@ const SavingsAccountTable = ({ accounts: initialAccounts, totalShown: initialTot
     setEditingAccount(account);
     editForm.setValues({
       name: account.name,
-      initial_balance: account.initial_balance,
+      base_balance: account.base_balance,
       currency: account.currency || 'EUR',
       bank_institution: account.bank_institution,
     });
@@ -175,8 +175,8 @@ const SavingsAccountTable = ({ accounts: initialAccounts, totalShown: initialTot
     switch (column) {
       case 'name':
         return entry.name;
-      case 'initial_balance':
-        return entry.initial_balance;
+      case 'base_balance':
+        return entry.base_balance;
       case 'bank_institution':
         return entry.bank_institution || '';
       default:
@@ -186,7 +186,10 @@ const SavingsAccountTable = ({ accounts: initialAccounts, totalShown: initialTot
 
   const { sortedData, sortState, handleSort } = useTableSort('savingsAccountTable', data, getValue);
 
-  const totalShown = initialTotalShown ?? sortedData.reduce((sum, account) => sum + account.initial_balance, 0);
+  const totalShown = initialTotalShown ?? sortedData.reduce((sum, account) => sum + account.base_balance, 0);
+
+  const baseBalanceDescription =
+    'Snapshot of your real-world account balance when you first added this account. Track all future changes via contributions.';
 
   const columns: TableColumn<SavingsAccount>[] = [
     {
@@ -196,9 +199,9 @@ const SavingsAccountTable = ({ accounts: initialAccounts, totalShown: initialTot
       sortable: true,
     },
     {
-      key: 'initial_balance',
-      label: 'Initial Balance',
-      render: (account) => formatCurrency(account.initial_balance, account.currency),
+      key: 'base_balance',
+      label: 'Base balance',
+      render: (account) => formatCurrency(account.base_balance, account.currency),
       sortable: true,
     },
     {
@@ -223,16 +226,17 @@ const SavingsAccountTable = ({ accounts: initialAccounts, totalShown: initialTot
       ),
     },
     {
-      key: 'initial_balance',
+      key: 'base_balance',
       render: (form) => (
         <NumberInput
-          label="Initial Balance"
-          placeholder="Enter initial balance"
+          label="Base balance"
+          placeholder="Current balance when adding this account"
+          description={baseBalanceDescription}
           min={0}
           step={0.01}
           decimalScale={2}
           required
-          {...form.getInputProps('initial_balance')}
+          {...form.getInputProps('base_balance')}
         />
       ),
     },
@@ -275,16 +279,17 @@ const SavingsAccountTable = ({ accounts: initialAccounts, totalShown: initialTot
       ),
     },
     {
-      key: 'initial_balance',
+      key: 'base_balance',
       render: (form) => (
         <NumberInput
-          label="Initial Balance"
-          placeholder="Enter initial balance"
+          label="Base balance"
+          placeholder="Current balance when adding this account"
+          description={baseBalanceDescription}
           min={0}
           step={0.01}
           decimalScale={2}
           required
-          {...form.getInputProps('initial_balance')}
+          {...form.getInputProps('base_balance')}
         />
       ),
     },
