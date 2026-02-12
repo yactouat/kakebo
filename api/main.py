@@ -20,8 +20,6 @@ from routers import (
     projects_router,
     savings_accounts_router,
     settings_router,
-    wishlist_items_router,
-    wishlists_router,
 )
 from schemas import APIResponse
 
@@ -87,8 +85,6 @@ app.include_router(net_worth_router.router)
 app.include_router(projects_router.router)
 app.include_router(savings_accounts_router.router)
 app.include_router(settings_router.router)
-app.include_router(wishlist_items_router.router)
-app.include_router(wishlists_router.router)
 
 # Mount static files for serving uploaded images
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
